@@ -1,0 +1,10 @@
+# github.com/icza/bitio v1.0.0
+github.com/icza/bitio
+# github.com/mewkiz/flac v1.0.5
+github.com/mewkiz/flac
+github.com/mewkiz/flac/frame
+github.com/mewkiz/flac/internal/bits
+github.com/mewkiz/flac/internal/hashutil
+github.com/mewkiz/flac/internal/hashutil/crc16
+github.com/mewkiz/flac/internal/hashutil/crc8
+github.com/mewkiz/flac/meta
