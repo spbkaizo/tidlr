@@ -31,7 +31,6 @@ import (
 	"errors"
 	"io"
 	"io/ioutil"
-	"os"
 
 	"github.com/mewkiz/flac/internal/bits"
 )
@@ -56,8 +55,7 @@ type Block struct {
 // ignore it.
 func New(r io.Reader) (block *Block, err error) {
 	block = new(Block)
-	err = block.parseHeader(r)
-	if err != nil {
+	if err = block.parseHeader(r); err != nil {
 		return block, err
 	}
 	block.lr = io.LimitReader(r, block.Length)
@@ -71,8 +69,7 @@ func Parse(r io.Reader) (block *Block, err error) {
 	if err != nil {
 		return block, err
 	}
-	err = block.Parse()
-	if err != nil {
+	if err = block.Parse(); err != nil {
 		return block, err
 	}
 	return block, nil
@@ -111,7 +108,7 @@ func (block *Block) Parse() error {
 // Skip ignores the contents of the metadata block body.
 func (block *Block) Skip() error {
 	if sr, ok := block.lr.(io.Seeker); ok {
-		_, err := sr.Seek(0, os.SEEK_END)
+		_, err := sr.Seek(0, io.SeekEnd)
 		return err
 	}
 	_, err := io.Copy(ioutil.Discard, block.lr)
@@ -172,13 +169,13 @@ type Type uint8
 
 // Metadata block body types.
 const (
-	TypeStreamInfo Type = iota
-	TypePadding
-	TypeApplication
-	TypeSeekTable
-	TypeVorbisComment
-	TypeCueSheet
-	TypePicture
+	TypeStreamInfo    Type = 0
+	TypePadding       Type = 1
+	TypeApplication   Type = 2
+	TypeSeekTable     Type = 3
+	TypeVorbisComment Type = 4
+	TypeCueSheet      Type = 5
+	TypePicture       Type = 6
 )
 
 func (t Type) String() string {

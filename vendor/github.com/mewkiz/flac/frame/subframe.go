@@ -28,11 +28,10 @@ type Subframe struct {
 
 // parseSubframe reads and parses the header, and the audio samples of a
 // subframe.
-func (frame *Frame) parseSubframe(bps uint) (subframe *Subframe, err error) {
+func (frame *Frame) parseSubframe(br *bits.Reader, bps uint) (subframe *Subframe, err error) {
 	// Parse subframe header.
 	subframe = new(Subframe)
-	err = subframe.parseHeader(frame.br)
-	if err != nil {
+	if err = subframe.parseHeader(br); err != nil {
 		return subframe, err
 	}
 	// Adjust bps of subframe for wasted bits-per-sample.
@@ -43,13 +42,13 @@ func (frame *Frame) parseSubframe(bps uint) (subframe *Subframe, err error) {
 	subframe.Samples = make([]int32, 0, subframe.NSamples)
 	switch subframe.Pred {
 	case PredConstant:
-		err = subframe.decodeConstant(frame.br, bps)
+		err = subframe.decodeConstant(br, bps)
 	case PredVerbatim:
-		err = subframe.decodeVerbatim(frame.br, bps)
+		err = subframe.decodeVerbatim(br, bps)
 	case PredFixed:
-		err = subframe.decodeFixed(frame.br, bps)
+		err = subframe.decodeFixed(br, bps)
 	case PredFIR:
-		err = subframe.decodeFIR(frame.br, bps)
+		err = subframe.decodeFIR(br, bps)
 	}
 
 	// Left shift to accout for wasted bits-per-sample.
@@ -326,8 +325,7 @@ func (subframe *Subframe) decodeFIR(br *bits.Reader, bps uint) error {
 	}
 
 	// Decode subframe residuals.
-	err = subframe.decodeResidual(br)
-	if err != nil {
+	if err = subframe.decodeResidual(br); err != nil {
 		return err
 	}
 
@@ -422,8 +420,7 @@ func (subframe *Subframe) decodeRicePart(br *bits.Reader, paramSize uint) error 
 
 		// Decode the Rice encoded residuals of the partition.
 		for j := 0; j < nsamples; j++ {
-			err = subframe.decodeRiceResidual(br, param)
-			if err != nil {
+			if err = subframe.decodeRiceResidual(br, param); err != nil {
 				return err
 			}
 		}

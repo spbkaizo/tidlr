@@ -121,7 +121,7 @@ func (frame *Frame) Parse() error {
 		}
 
 		// Parse subframe.
-		frame.Subframes[channel], err = frame.parseSubframe(bps)
+		frame.Subframes[channel], err = frame.parseSubframe(frame.br, bps)
 		if err != nil {
 			return err
 		}
@@ -132,13 +132,12 @@ func (frame *Frame) Parse() error {
 
 	// 2 bytes: CRC-16 checksum.
 	var want uint16
-	err = binary.Read(frame.r, binary.BigEndian, &want)
-	if err != nil {
+	if err = binary.Read(frame.r, binary.BigEndian, &want); err != nil {
 		return unexpected(err)
 	}
 	got := frame.crc.Sum16()
 	if got != want {
-		return fmt.Errorf("frame.Frame.Parse: CRC-16 checksum mismatch; expected %v, got %v", want, got)
+		log.Printf("frame.Frame.Parse: CRC-16 checksum mismatch; expected 0x%04X, got 0x%04X", want, got)
 	}
 
 	return nil
@@ -216,9 +215,11 @@ func (frame *Frame) parseHeader() error {
 	h := crc8.NewATM()
 	hr := io.TeeReader(frame.hr, h)
 
-	// 14 bits: sync-code (11111111111110)
+	// Create bit reader.
 	br := bits.NewReader(hr)
 	frame.br = br
+
+	// 14 bits: sync-code (11111111111110)
 	x, err := br.Read(14)
 	if err != nil {
 		// This is the only place an audio frame may return io.EOF, which signals
@@ -261,38 +262,65 @@ func (frame *Frame) parseHeader() error {
 		return unexpected(err)
 	}
 
-	// 4 bits: Channels.
-	//
-	// The 4 bits are used to specify the channels as follows:
-	//    0000: (1 channel) mono.
-	//    0001: (2 channels) left, right.
-	//    0010: (3 channels) left, right, center.
-	//    0011: (4 channels) left, right, left surround, right surround.
-	//    0100: (5 channels) left, right, center, left surround, right surround.
-	//    0101: (6 channels) left, right, center, LFE, left surround, right surround.
-	//    0110: (7 channels) left, right, center, LFE, center surround, side left, side right.
-	//    0111: (8 channels) left, right, center, LFE, left surround, right surround, side left, side right.
-	//    1000: (2 channels) left, side; using inter-channel decorrelation.
-	//    1001: (2 channels) side, right; using inter-channel decorrelation.
-	//    1010: (2 channels) mid, side; using inter-channel decorrelation.
-	//    1011: reserved.
-	//    1100: reserved.
-	//    1101: reserved.
-	//    1111: reserved.
-	x, err = br.Read(4)
-	if err != nil {
-		return unexpected(err)
+	// Parse channels.
+	if err := frame.parseChannels(br); err != nil {
+		return err
 	}
-	if x >= 0xB {
-		return fmt.Errorf("frame.Frame.parseHeader: reserved channels bit pattern (%04b)", x)
-	}
-	frame.Channels = Channels(x)
 
-	// 3 bits: BitsPerSample.
-	x, err = br.Read(3)
+	// Parse bits per sample.
+	if err := frame.parseBitsPerSample(br); err != nil {
+		return err
+	}
+
+	// 1 bit: reserved.
+	x, err = br.Read(1)
 	if err != nil {
 		return unexpected(err)
 	}
+	if x != 0 {
+		return errors.New("frame.Frame.parseHeader: non-zero reserved value")
+	}
+
+	// if (fixed block size)
+	//    1-6 bytes: UTF-8 encoded frame number.
+	// else
+	//    1-7 bytes: UTF-8 encoded sample number.
+	frame.Num, err = decodeUTF8Int(hr)
+	if err != nil {
+		return unexpected(err)
+	}
+
+	// Parse block size.
+	if err := frame.parseBlockSize(br, blockSize); err != nil {
+		return err
+	}
+
+	// Parse sample rate.
+	if err := frame.parseSampleRate(br, sampleRate); err != nil {
+		return err
+	}
+
+	// 1 byte: CRC-8 checksum.
+	var want uint8
+	if err = binary.Read(frame.hr, binary.BigEndian, &want); err != nil {
+		return unexpected(err)
+	}
+	got := h.Sum8()
+	if want != got {
+		log.Printf("frame.Frame.parseHeader: CRC-8 checksum mismatch; expected 0x%02X, got 0x%02X", want, got)
+	}
+
+	return nil
+}
+
+// parseBitsPerSample parses the bits per sample of the header.
+func (frame *Frame) parseBitsPerSample(br *bits.Reader) error {
+	// 3 bits: BitsPerSample.
+	x, err := br.Read(3)
+	if err != nil {
+		return unexpected(err)
+	}
+
 	// The 3 bits are used to specify the sample size as follows:
 	//    000: unknown sample size; get from StreamInfo.
 	//    001: 8 bits-per-sample.
@@ -329,27 +357,42 @@ func (frame *Frame) parseHeader() error {
 		// 111: reserved.
 		return fmt.Errorf("frame.Frame.parseHeader: reserved sample size bit pattern (%03b)", x)
 	}
+	return nil
+}
 
-	// 1 bit: reserved.
-	x, err = br.Read(1)
-	if err != nil {
-		return unexpected(err)
-	}
-	if x != 0 {
-		return errors.New("frame.Frame.parseHeader: non-zero reserved value")
-	}
-
-	// if (fixed block size)
-	//    1-6 bytes: UTF-8 encoded frame number.
-	// else
-	//    1-7 bytes: UTF-8 encoded sample number.
-	frame.Num, err = decodeUTF8Int(hr)
-	if err != nil {
-		return unexpected(err)
-	}
-
-	// Parse block size.
+// parseChannels parses the channels of the header.
+func (frame *Frame) parseChannels(br *bits.Reader) error {
+	// 4 bits: Channels.
 	//
+	// The 4 bits are used to specify the channels as follows:
+	//    0000: (1 channel) mono.
+	//    0001: (2 channels) left, right.
+	//    0010: (3 channels) left, right, center.
+	//    0011: (4 channels) left, right, left surround, right surround.
+	//    0100: (5 channels) left, right, center, left surround, right surround.
+	//    0101: (6 channels) left, right, center, LFE, left surround, right surround.
+	//    0110: (7 channels) left, right, center, LFE, center surround, side left, side right.
+	//    0111: (8 channels) left, right, center, LFE, left surround, right surround, side left, side right.
+	//    1000: (2 channels) left, side; using inter-channel decorrelation.
+	//    1001: (2 channels) side, right; using inter-channel decorrelation.
+	//    1010: (2 channels) mid, side; using inter-channel decorrelation.
+	//    1011: reserved.
+	//    1100: reserved.
+	//    1101: reserved.
+	//    1111: reserved.
+	x, err := br.Read(4)
+	if err != nil {
+		return unexpected(err)
+	}
+	if x >= 0xB {
+		return fmt.Errorf("frame.Frame.parseHeader: reserved channels bit pattern (%04b)", x)
+	}
+	frame.Channels = Channels(x)
+	return nil
+}
+
+// parseBlockSize parses the block size of the header.
+func (frame *Frame) parseBlockSize(br *bits.Reader, blockSize uint64) error {
 	// The 4 bits of n are used to specify the block size as follows:
 	//    0000: reserved.
 	//    0001: 192 samples.
@@ -372,14 +415,14 @@ func (frame *Frame) parseHeader() error {
 		frame.BlockSize = 576 * (1 << (n - 2))
 	case n == 0x6:
 		// 0110: get 8 bit (block size)-1 from the end of the header.
-		x, err = br.Read(8)
+		x, err := br.Read(8)
 		if err != nil {
 			return unexpected(err)
 		}
 		frame.BlockSize = uint16(x + 1)
 	case n == 0x7:
 		// 0111: get 16 bit (block size)-1 from the end of the header.
-		x, err = br.Read(16)
+		x, err := br.Read(16)
 		if err != nil {
 			return unexpected(err)
 		}
@@ -388,9 +431,11 @@ func (frame *Frame) parseHeader() error {
 		//    1000-1111: 256 * 2^(n-8) samples.
 		frame.BlockSize = 256 * (1 << (n - 8))
 	}
+	return nil
+}
 
-	// Parse sample rate.
-	//
+// parseSampleRate parses the sample rate of the header.
+func (frame *Frame) parseSampleRate(br *bits.Reader, sampleRate uint64) error {
 	// The 4 bits are used to specify the sample rate as follows:
 	//    0000: unknown sample rate; get from StreamInfo.
 	//    0001: 88.2 kHz.
@@ -428,8 +473,6 @@ func (frame *Frame) parseHeader() error {
 	case 0x5:
 		// 0101: 16 kHz.
 		frame.SampleRate = 16000
-		// TODO(u): Remove log message when the test cases have been extended.
-		log.Printf("frame.Frame.parseHeader: The flac library test cases do not yet include any audio files with sample rate %d. If possible please consider contributing this audio sample to improve the reliability of the test cases.", frame.SampleRate)
 	case 0x6:
 		// 0110: 22.05 kHz.
 		frame.SampleRate = 22050
@@ -452,7 +495,7 @@ func (frame *Frame) parseHeader() error {
 		frame.SampleRate = 96000
 	case 0xC:
 		// 1100: get 8 bit sample rate (in kHz) from the end of the header.
-		x, err = br.Read(8)
+		x, err := br.Read(8)
 		if err != nil {
 			return unexpected(err)
 		}
@@ -461,14 +504,14 @@ func (frame *Frame) parseHeader() error {
 		log.Printf("frame.Frame.parseHeader: The flac library test cases do not yet include any audio files with sample rate %d. If possible please consider contributing this audio sample to improve the reliability of the test cases.", frame.SampleRate)
 	case 0xD:
 		// 1101: get 16 bit sample rate (in Hz) from the end of the header.
-		x, err = br.Read(16)
+		x, err := br.Read(16)
 		if err != nil {
 			return unexpected(err)
 		}
 		frame.SampleRate = uint32(x)
 	case 0xE:
 		// 1110: get 16 bit sample rate (in daHz) from the end of the header.
-		x, err = br.Read(16)
+		x, err := br.Read(16)
 		if err != nil {
 			return unexpected(err)
 		}
@@ -479,18 +522,6 @@ func (frame *Frame) parseHeader() error {
 		// 1111: invalid.
 		return errors.New("frame.Frame.parseHeader: invalid sample rate bit pattern (1111)")
 	}
-
-	// 1 byte: CRC-8 checksum.
-	var want uint8
-	err = binary.Read(frame.hr, binary.BigEndian, &want)
-	if err != nil {
-		return unexpected(err)
-	}
-	got := h.Sum8()
-	if got != want {
-		return fmt.Errorf("frame.Frame.parseHeader: CRC-8 checksum mismatch; expected %v, got %v", want, got)
-	}
-
 	return nil
 }
 
@@ -582,7 +613,7 @@ func (frame *Frame) correlate() {
 			m *= 2
 			// Notice that the integer division in mid = (left + right)/2 discards
 			// the least significant bit. It can be reconstructed however, since a
-			// sum A+B and a differance A-B has the same least significant bit.
+			// sum A+B and a difference A-B has the same least significant bit.
 			//
 			// ref: Data Compression: The Complete Reference (ch. 7, Decorrelation)
 			m |= s & 1

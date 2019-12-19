@@ -70,8 +70,7 @@ func New(r io.Reader) (stream *Stream, err error) {
 		if err != nil && err != meta.ErrReservedType {
 			return stream, err
 		}
-		err = block.Skip()
-		if err != nil {
+		if err = block.Skip(); err != nil {
 			return stream, err
 		}
 		isLast = block.IsLast
@@ -80,8 +79,11 @@ func New(r io.Reader) (stream *Stream, err error) {
 	return stream, nil
 }
 
-// signature marks the beginning of a FLAC stream.
-var signature = []byte("fLaC")
+// flacSignature marks the beginning of a FLAC stream.
+var flacSignature = []byte("fLaC")
+
+// id3Signature marks the beginning of an ID3 stream, used to skip over ID3 data.
+var id3Signature = []byte("ID3")
 
 // parseStreamInfo verifies the signature which marks the beginning of a FLAC
 // stream, and parses the StreamInfo metadata block. It returns a boolean value
@@ -91,12 +93,24 @@ func (stream *Stream) parseStreamInfo() (isLast bool, err error) {
 	// Verify FLAC signature.
 	r := stream.r
 	var buf [4]byte
-	_, err = io.ReadFull(r, buf[:])
-	if err != nil {
+	if _, err = io.ReadFull(r, buf[:]); err != nil {
 		return false, err
 	}
-	if !bytes.Equal(buf[:], signature) {
-		return false, fmt.Errorf("flac.parseStreamInfo: invalid FLAC signature; expected %q, got %q", signature, buf)
+
+	// Skip prepended ID3v2 data.
+	if bytes.Equal(buf[:3], id3Signature) {
+		if err := stream.skipID3v2(); err != nil {
+			return false, err
+		}
+
+		// Second attempt at verifying signature.
+		if _, err = io.ReadFull(r, buf[:]); err != nil {
+			return false, err
+		}
+	}
+
+	if !bytes.Equal(buf[:], flacSignature) {
+		return false, fmt.Errorf("flac.parseStreamInfo: invalid FLAC signature; expected %q, got %q", flacSignature, buf)
 	}
 
 	// Parse StreamInfo metadata block.
@@ -110,6 +124,27 @@ func (stream *Stream) parseStreamInfo() (isLast bool, err error) {
 	}
 	stream.Info = si
 	return block.IsLast, nil
+}
+
+// skipID3v2 skips ID3v2 data prepended to flac files.
+func (stream *Stream) skipID3v2() error {
+	r := bufio.NewReader(stream.r)
+
+	// Discard unnecessary data from the ID3v2 header.
+	if _, err := r.Discard(2); err != nil {
+		return err
+	}
+
+	// Read the size from the ID3v2 header.
+	var sizeBuf [4]byte
+	if _, err := r.Read(sizeBuf[:]); err != nil {
+		return err
+	}
+	// The size is encoded as a synchsafe integer.
+	size := int(sizeBuf[0])<<21 | int(sizeBuf[1])<<14 | int(sizeBuf[2])<<7 | int(sizeBuf[3])
+
+	_, err := r.Discard(size)
+	return err
 }
 
 // Parse creates a new Stream for accessing the metadata blocks and audio
@@ -137,8 +172,7 @@ func Parse(r io.Reader) (stream *Stream, err error) {
 			// the specification.
 			//
 			// ref: https://www.xiph.org/flac/format.html#format_overview
-			err = block.Skip()
-			if err != nil {
+			if err = block.Skip(); err != nil {
 				return stream, err
 			}
 		}
@@ -184,6 +218,9 @@ func ParseFile(path string) (stream *Stream, err error) {
 		return nil, err
 	}
 	stream, err = Parse(f)
+	if err != nil {
+		return nil, err
+	}
 	stream.c = f
 	return stream, err
 }
@@ -191,8 +228,8 @@ func ParseFile(path string) (stream *Stream, err error) {
 // Close closes the stream if opened through a call to Open or ParseFile, and
 // performs no operation otherwise.
 func (stream *Stream) Close() error {
-	if r, ok := stream.r.(io.Closer); ok {
-		return r.Close()
+	if stream.c != nil {
+		return stream.c.Close()
 	}
 	return nil
 }
@@ -211,4 +248,7 @@ func (stream *Stream) ParseNext() (f *frame.Frame, err error) {
 	return frame.Parse(stream.r)
 }
 
-// TODO(u): Implement a Seek method.
+// Seek is not implement yet.
+func (stream *Stream) Seek(offset int64, whence int) (read int64, err error) {
+	return 0, nil
+}

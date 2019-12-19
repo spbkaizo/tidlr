@@ -678,6 +678,7 @@ func enc(src string, tr Track) error {
 		return err
 	}
 	err = flac.Encode(f, stream)
+	//enc, err := flac.NewEncoder(f, comments, stream.Blocks)
 	f.Close()
 	stream.Close()
 	return err

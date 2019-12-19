@@ -4,11 +4,9 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"log"
 )
 
 const (
-	t1 = 0x00 // 0000 0000
 	tx = 0x80 // 1000 0000
 	t2 = 0xC0 // 1100 0000
 	t3 = 0xE0 // 1110 0000
@@ -93,29 +91,21 @@ func decodeUTF8Int(r io.Reader) (n uint64, err error) {
 		// total: 21 bits (3 + 6 + 6 + 6)
 		l = 3
 		n = uint64(c0 & mask4)
-		// TODO(u): Remove log message when the test cases have been extended.
-		log.Printf("frame.decodeUTF8Int: The flac library test cases do not yet include any audio files with %d UTF-8 continuation bytes. If possible please consider contributing this audio sample to improve the reliability of the test cases.", l)
 	case c0 < t6:
 		// if c0 == 111110xx
 		// total: 26 bits (2 + 6 + 6 + 6 + 6)
 		l = 4
 		n = uint64(c0 & mask5)
-		// TODO(u): Remove log message when the test cases have been extended.
-		log.Printf("frame.decodeUTF8Int: The flac library test cases do not yet include any audio files with %d UTF-8 continuation bytes. If possible please consider contributing this audio sample to improve the reliability of the test cases.", l)
 	case c0 < t7:
 		// if c0 == 1111110x
 		// total: 31 bits (1 + 6 + 6 + 6 + 6 + 6)
 		l = 5
 		n = uint64(c0 & mask6)
-		// TODO(u): Remove log message when the test cases have been extended.
-		log.Printf("frame.decodeUTF8Int: The flac library test cases do not yet include any audio files with %d UTF-8 continuation bytes. If possible please consider contributing this audio sample to improve the reliability of the test cases.", l)
 	case c0 < t8:
 		// if c0 == 11111110
 		// total: 36 bits (0 + 6 + 6 + 6 + 6 + 6 + 6)
 		l = 6
 		n = 0
-		// TODO(u): Remove log message when the test cases have been extended.
-		log.Printf("frame.decodeUTF8Int: The flac library test cases do not yet include any audio files with %d UTF-8 continuation bytes. If possible please consider contributing this audio sample to improve the reliability of the test cases.", l)
 	}
 
 	// store bits from continuation bytes.
