@@ -553,7 +553,12 @@ func (t *Tidal) DownloadTrack(tr Track) error {
 
 		err = enc(dirs, tr)
 		if err != nil {
-			return err
+			if strings.Contains(err.Error(), "flac.parseStreamInfo: invalid FLAC signature; expected") {
+				// this isn't a flac file.  return
+				log.Printf("ERROR: File %v isn't a FLAC file, removing and continuing.", path)
+			} else {
+				return err
+			}
 		}
 		os.Remove(path)
 	}
@@ -613,6 +618,7 @@ func enc(src string, tr Track) error {
 	path := src + "/" + tracknum + " - " + clean(tr.Artist.Name) + " - " + clean(tr.Title)
 	stream, err := flac.ParseFile(path)
 	if err != nil {
+		// this might be an AAC file, check
 		return err
 	}
 
