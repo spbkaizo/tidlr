@@ -1,13 +1,15 @@
-# github.com/icza/bitio v0.0.0-20180221120200-b25b30b42508
+# github.com/icza/bitio v1.0.0
 github.com/icza/bitio
-# github.com/mewkiz/flac v1.0.5-0.20180818192143-4309906bb81e
+# github.com/mewkiz/flac v1.0.6
 github.com/mewkiz/flac
 github.com/mewkiz/flac/frame
 github.com/mewkiz/flac/internal/bits
 github.com/mewkiz/flac/internal/hashutil
 github.com/mewkiz/flac/internal/hashutil/crc16
 github.com/mewkiz/flac/internal/hashutil/crc8
+github.com/mewkiz/flac/internal/ioutilx
+github.com/mewkiz/flac/internal/utf8
 github.com/mewkiz/flac/meta
-# github.com/mewkiz/pkg v0.0.0-20170428133157-c19a6f9fa6f8
+# github.com/mewkiz/pkg v0.0.0-20190919212034-518ade7978e2
 github.com/mewkiz/pkg/errutil
 github.com/mewkiz/pkg/term

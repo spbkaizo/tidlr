@@ -21,7 +21,7 @@ func Encode(w io.Writer, stream *Stream) error {
 	// Use a temporary buffer to avoid closing the underlying writer when calling
 	// `Close` on the bit writer to flushing pending bits.
 	buf := new(bytes.Buffer)
-	enc := &encoder{bw: bitio.NewWriter(buf)}
+	enc := &encoder{bw: *bitio.NewWriter(buf)}
 
 	// Store FLAC signature.
 	if _, err := enc.bw.Write(flacSignature); err != nil {
@@ -246,7 +246,7 @@ func (enc *encoder) writeSeekTable(hdr meta.Header, table *meta.SeekTable) error
 
 	// Store metadata block body.
 	for _, point := range table.Points {
-		if err := binary.Write(enc.bw, binary.BigEndian, point); err != nil {
+		if err := binary.Write(&enc.bw, binary.BigEndian, point); err != nil {
 			return errutil.Err(err)
 		}
 	}
@@ -276,7 +276,7 @@ func (enc *encoder) writeVorbisComment(hdr meta.Header, comment *meta.VorbisComm
 	// Store metadata block body.
 	// 32 bits: vendor length.
 	x := uint32(len(comment.Vendor))
-	if err := binary.Write(enc.bw, binary.LittleEndian, x); err != nil {
+	if err := binary.Write(&enc.bw, binary.LittleEndian, x); err != nil {
 		return errutil.Err(err)
 	}
 
@@ -288,7 +288,7 @@ func (enc *encoder) writeVorbisComment(hdr meta.Header, comment *meta.VorbisComm
 	// Store tags.
 	// 32 bits: number of tags.
 	x = uint32(len(comment.Tags))
-	if err := binary.Write(enc.bw, binary.LittleEndian, x); err != nil {
+	if err := binary.Write(&enc.bw, binary.LittleEndian, x); err != nil {
 		return errutil.Err(err)
 	}
 	for _, tag := range comment.Tags {
@@ -298,7 +298,7 @@ func (enc *encoder) writeVorbisComment(hdr meta.Header, comment *meta.VorbisComm
 
 		// 32 bits: vector length
 		x = uint32(len(buf))
-		if err := binary.Write(enc.bw, binary.LittleEndian, x); err != nil {
+		if err := binary.Write(&enc.bw, binary.LittleEndian, x); err != nil {
 			return errutil.Err(err)
 		}
 

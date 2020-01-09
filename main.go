@@ -107,8 +107,8 @@ func grabSavedAlbums(t *Tidal, ids []string) error {
 		} else {
 			album, err := t.GetAlbum(id)
 			if err != nil {
-				log.Println("can't get album info: " + id)
-				os.Exit(6)
+				log.Printf("can't get album info for %v (%v)", id, err)
+				//os.Exit(6)
 			}
 
 			albums = []Album{album}
@@ -197,8 +197,6 @@ func grabSavedAlbums(t *Tidal, ids []string) error {
 	return nil
 
 }
-
-
 
 func main() {
 	/* Log better */
