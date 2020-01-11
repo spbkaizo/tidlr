@@ -270,6 +270,9 @@ func main() {
 		// Grab Playlist
 		ids = flag.Args()
 		for _, id := range ids {
+			if strings.Contains(id, "https://tidal.com/browse/playlist/") {
+				id = strings.Replace(id, "https://tidal.com/browse/playlist/", "", -1)
+			}
 			//log.Printf("INFO: Retrieving playlist %v", id)
 			err := t.DownloadPlayList(id)
 			if err != nil {
