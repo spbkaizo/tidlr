@@ -117,6 +117,26 @@ type Search struct {
 	} `json:"tracks"`
 }
 
+type PlaylistInfo struct {
+	Created string `json:"created"`
+	Creator struct {
+		ID int64 `json:"id"`
+	} `json:"creator"`
+	Description    string `json:"description"`
+	Duration       int64  `json:"duration"`
+	Image          string `json:"image"`
+	LastUpdated    string `json:"lastUpdated"`
+	NumberOfTracks int64  `json:"numberOfTracks"`
+	NumberOfVideos int64  `json:"numberOfVideos"`
+	Popularity     int64  `json:"popularity"`
+	PublicPlaylist bool   `json:"publicPlaylist"`
+	SquareImage    string `json:"squareImage"`
+	Title          string `json:"title"`
+	Type           string `json:"type"`
+	URL            string `json:"url"`
+	Uuid           string `json:"uuid"`
+}
+
 type PlaylistItems struct {
 	Items []struct {
 		Cut  interface{} `json:"cut"`
@@ -292,12 +312,26 @@ func (t *Tidal) GetAlbumTracks(id string) ([]Track, error) {
 	return s.Items, t.get("albums/"+id+"/tracks", &url.Values{}, &s)
 }
 
+// GetPlaylistInfo func
+func (t *Tidal) GetPlaylistInfo(id string) (PlaylistInfo, error) {
+	var plistinfo PlaylistInfo
+	return plistinfo, t.get("playlists/"+id, &url.Values{}, &plistinfo)
+}
+
 // GetPlaylistTracks func
-func (t *Tidal) GetPlaylistTracks(id string) ([]Track, error) {
+func (t *Tidal) GetPlaylistTracks(id string) (PlaylistInfo, []Track, error) {
 	var s struct {
-		Items []Track `json:"items"`
+		PlaylistInfo PlaylistInfo
+		Items        []Track `json:"items"`
 	}
-	return s.Items, t.get("playlists/"+id+"/tracks", &url.Values{"limit": {"1000"}}, &s)
+	var err error
+	s.PlaylistInfo, err = t.GetPlaylistInfo(id)
+	if err != nil {
+		log.Printf("ERROR: While getting Playlist Information (%v)", err)
+	}
+	//log.Printf("DEBUG: %v", s.PlaylistInfo)
+	//return s.Items, t.get("playlists/"+id+"/tracks", &url.Values{"limit": {"1000"}}, &s)
+	return s.PlaylistInfo, s.Items, t.get("playlists/"+id+"/tracks", &url.Values{"limit": {"1000"}}, &s)
 }
 
 // SearchTracks func
@@ -462,7 +496,8 @@ func (t *Tidal) DownloadAlbum(al Album) error {
 	for i, track := range tracks {
 		log.Printf("\t [%v/%v] %v\n", i+1, len(tracks), track.Title)
 		//log.Printf("DEBUG track is %v", track)
-		if err := t.DownloadTrack(track); err != nil {
+		var plist PlaylistInfo // not needed
+		if err := t.DownloadTrack(plist, track); err != nil {
 			return err
 		}
 	}
@@ -472,7 +507,7 @@ func (t *Tidal) DownloadAlbum(al Album) error {
 
 func (t *Tidal) DownloadPlayList(id string) error {
 	//log.Printf("Playlist ID: %v", id)
-	tracks, err := t.GetPlaylistTracks(id)
+	plist, tracks, err := t.GetPlaylistTracks(id)
 	if err != nil {
 		//log.Printf("ERROR: %v", err)
 		return err
@@ -485,37 +520,62 @@ func (t *Tidal) DownloadPlayList(id string) error {
 		tcount++
 		track.PartOfPlaylist = true
 		log.Printf("INFO: Downloading %v - %v [%v/%v]", track.Artist.Name, track.Title, tcount, len(tracks))
-		err = t.DownloadTrack(track)
+
+		track.TrackNumber = json.Number(strconv.Itoa(tcount)) // weird.
+		if err != nil {
+			log.Printf("ERROR: %v")
+		}
+		err = t.DownloadTrack(plist, track)
 		if err != nil {
 			return err
 		}
 		//log.Printf("TRACK: %v", track)
 	}
+
+	dirs := clean(plist.Title)
+	os.MkdirAll(dirs, os.ModePerm)
+
+	metadata, err := json.MarshalIndent(plist, "", "\t")
+	if err != nil {
+		return err
+	}
+
+	err = ioutil.WriteFile(dirs+"/meta.json", metadata, 0777)
+	if err != nil {
+		return err
+	}
+
 	return nil
 }
 
-func (t *Tidal) DownloadTrack(tr Track) error {
+func (t *Tidal) DownloadTrack(plist PlaylistInfo, tr Track) error {
 	time.Sleep(667 * time.Millisecond) // seems to help with API errors... rate throttling?
 	if tr.Explicit == true && *onlyClean == true {
 		log.Printf("INFO: Skipping    %v - %v (Explicit)", tr.Artist.Name, tr.Title)
 		return nil
 	}
+
 	// TODO(ts): improve ID3
 	al := t.albumMap[tr.Album.ID.String()]
 	tr.Album = al
 
+	if tr.PartOfPlaylist == true {
+		tr.Album.Title = plist.Title
+		tr.Album.Artist.Name = "Tidal"
+	}
+
 	// path := src + "/" + tr.TrackNumber.String() + " - " + clean(tr.Artist.Name) + " - " + clean(tr.Title)
 	var tracknum string
-	if tr.PartOfPlaylist == false {
-		tint, _ := tr.TrackNumber.Int64()
-		if tint < 10 {
-			tracknum = "0" + tr.TrackNumber.String()
-		} else {
-			tracknum = tr.TrackNumber.String()
-		}
+	//if tr.PartOfPlaylist == false {
+	tint, _ := tr.TrackNumber.Int64()
+	if tint < 10 {
+		tracknum = "0" + tr.TrackNumber.String()
 	} else {
-		tracknum = "00"
+		tracknum = tr.TrackNumber.String()
 	}
+	//} else {
+	//	tracknum = "00"
+	//}
 
 	u, err := t.GetStreamURL(tr.ID.String(), "LOSSLESS")
 	if err != nil {
@@ -532,7 +592,7 @@ func (t *Tidal) DownloadTrack(tr Track) error {
 		if !tr.PartOfPlaylist {
 			dirs = clean(al.Artist.Name) + " - " + clean(al.Title)
 		} else {
-			dirs = "Playlist Tracks"
+			dirs = clean(plist.Title)
 		}
 		os.MkdirAll(dirs, os.ModePerm)
 		//    path := src + "/" + tracknum + " - " + clean(tr.Artist.Name) + " - " + clean(tr.Title)
@@ -607,16 +667,16 @@ func enc(src string, tr Track) error {
 	// https://wiki.hydrogenaud.io/index.php?title=Tag_Mapping#Titles
 	// Decode FLAC file.
 	var tracknum string
-	if tr.PartOfPlaylist == false {
-		tint, _ := tr.TrackNumber.Int64()
-		if tint < 10 {
-			tracknum = "0" + tr.TrackNumber.String()
-		} else {
-			tracknum = tr.TrackNumber.String()
-		}
+	//if tr.PartOfPlaylist == false {
+	tint, _ := tr.TrackNumber.Int64()
+	if tint < 10 {
+		tracknum = "0" + tr.TrackNumber.String()
 	} else {
-		tracknum = "00"
+		tracknum = tr.TrackNumber.String()
 	}
+	//} else {
+	//	tracknum = "00"
+	//}
 	path := src + "/" + tracknum + " - " + clean(tr.Artist.Name) + " - " + clean(tr.Title)
 	stream, err := flac.ParseFile(path)
 	if err != nil {

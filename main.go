@@ -80,7 +80,7 @@ func grabSavedAlbums(t *Tidal, ids []string) error {
 				albums = append(albums, lbums...)
 			} else if *onlyPlayLists {
 				log.Println("Fetching Playlist ID %v", artist.ID.String())
-				tracks, err := t.GetPlaylistTracks(id)
+				_, tracks, err := t.GetPlaylistTracks(id)
 				if err != nil {
 					log.Println("can't get playlist")
 					os.Exit(5)
@@ -270,7 +270,7 @@ func main() {
 		// Grab Playlist
 		ids = flag.Args()
 		for _, id := range ids {
-			log.Printf("INFO: Retrieving playlist %v", id)
+			//log.Printf("INFO: Retrieving playlist %v", id)
 			err := t.DownloadPlayList(id)
 			if err != nil {
 				log.Printf("ERROR: %v", err)
