@@ -660,6 +660,8 @@ func New(user, pass string) (*Tidal, error) {
 func clean(s string) string {
 	s = strings.Replace(s, ":", "-", -1)
 	s = strings.Replace(s, "\"", "~", -1)
+	s = strings.Replace(s, "?", "~", -1)
+	s = strings.Replace(s, "*", "~", -1)
 	return strings.Replace(s, "/", "\u2215", -1)
 }
 
