@@ -5,8 +5,15 @@ I wrote this utility as my DAC doesn't support the Offline Files option (A&K AK7
 
 # Changelog
 
+### 0.9.3
+
+* Tidal changed the access tokens, so they have been rotated in the app.
+* There's a JSON file available at https://cdn.jsdelivr.net/gh/yaronzz/Tidal-Media-Downloader@latest/Else/tokens.json which seems to keep track of new tokens
+* TODO: Implement JSON download of tokens file at runtime to remove need for manual recompile, with fall back on pre-defined tokens.
+
 ### 0.9.2
-                                                                                                                                                              * You can now paste a full URL for a playlist to the command line, and the tool will strip out the playlist, making things slightly easier for using the "Copy Link" option in Tidal
+
+* You can now paste a full URL for a playlist to the command line, and the tool will strip out the playlist, making things slightly easier for using the "Copy Link" option in Tidal
 
 ### 0.9.1
 

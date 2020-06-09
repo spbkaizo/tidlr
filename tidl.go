@@ -32,10 +32,17 @@ const clientVersion = "1.9.1"
 // For tokens that are valid...
 var token string
 
-const atoken = "kgsOOmYk3zShYrNP" // This is the Android token *nb: All Streams are HTTP Streams. Correct numberOfVideos in Playlists (best Token to use)
+//const atoken = "kgsOOmYk3zShYrNP" // This is the Android token *nb: All Streams are HTTP Streams. Correct numberOfVideos in Playlists (best Token to use)
+const atoken = "wc8j_yBJd20zOmx0"
+
+//const atoken = "pl4Vc0hemlAXD0mN"
 const mtoken = "MbjR4DLXz1ghC4rV" // Like Android Token, supports MQA, but returns 'numberOfVideos = 0' in Playlists
 // You would be wise to peruse articles on MQA before switching, e.g.
 // http://archimago.blogspot.com/2017/10/mqa-final-final-comment-simply-put-why.html#more
+
+// In June 2020, Tidal rotated out the tokens so now we reference this JSON that
+// appears to maintain an updated list
+const tokenurl = "https://cdn.jsdelivr.net/gh/yaronzz/Tidal-Media-Downloader@latest/Else/tokens.json"
 
 const (
 	AQ_MQM int = iota
@@ -46,6 +53,14 @@ const (
 var cookieJar, _ = cookiejar.New(nil)
 var c = &http.Client{
 	Jar: cookieJar,
+}
+
+type Tokens struct {
+	_Token       string `json:"//token"`
+	_TokenPhone  string `json:"//token_phone"`
+	_TokenPhone2 string `json:"//token_phone2"`
+	Token        string `json:"token"`
+	TokenPhone   string `json:"token_phone"`
 }
 
 type TidalError struct {
@@ -643,11 +658,19 @@ func New(user, pass string) (*Tidal, error) {
 		"clientUniqueKey": {uuid()},
 		"clientVersion":   {clientVersion},
 	}
+	//log.Printf("DEBUG: %v", &query)
 	res, err := http.PostForm(baseurl+"login/username", query)
 	if err != nil {
+		log.Printf("ERROR: Logging into Tidal (%v)", err)
 		return nil, err
 	}
 	if res.StatusCode != http.StatusOK {
+		//log.Printf("DEBUG: Response was: %v", res)
+		body, err := ioutil.ReadAll(res.Body)
+		if err != nil {
+			log.Printf("CRITICAL: Can't read response body (%v)", err)
+		}
+		log.Printf("DEBUG: Response Body \n%v", string(body))
 		return nil, fmt.Errorf("unexpected error code from tidal: %d", res.StatusCode)
 	}
 

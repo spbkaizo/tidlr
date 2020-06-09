@@ -244,7 +244,7 @@ func main() {
 
 	t, err := New(config.Username, config.Password)
 	if err != nil {
-		log.Println("can't login to tidl right now")
+		log.Printf("ERROR: can't login to tidl right now (%v)", err)
 		os.Exit(4)
 	}
 	log.Printf("INFO: Logged into Tidal %v, user id %v - got Session ID [%v]", t.CountryCode, t.UserID.String(), t.SessionID)
