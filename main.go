@@ -6,6 +6,7 @@ import (
 	"flag"
 	"io/ioutil"
 	"log"
+	"net/http"
 	"os"
 	"strings"
 	"time"
@@ -25,6 +26,14 @@ type History struct {
 	Artist     string
 	Downloaded bool
 	Added      time.Time
+}
+
+type Tokens struct {
+	_Token       string `json:"//token"`
+	_TokenPhone  string `json:"//token_phone"`
+	_TokenPhone2 string `json:"//token_phone2"`
+	Token        string `json:"token"`
+	TokenPhone   string `json:"token_phone"`
 }
 
 var hist []History
@@ -201,6 +210,26 @@ func grabSavedAlbums(t *Tidal, ids []string) error {
 func main() {
 	/* Log better */
 	log.SetFlags(log.LstdFlags | log.Ldate | log.Lmicroseconds | log.Lshortfile)
+
+	log.Printf("INFO: Checking for newer API access token...")
+	resp, e := http.Get(tokenurl)
+	if e != nil {
+		log.Printf("ERROR: While trying to access updated token list (%v) (URL: %v)", e, tokenurl)
+		log.Printf("INFO: Attempting statically defined token for login (%v)", atoken)
+	}
+	defer resp.Body.Close()
+	body, e := ioutil.ReadAll(resp.Body)
+	if e != nil {
+		log.Printf("Error: %v", e)
+	}
+	var newtokens Tokens
+	e = json.Unmarshal(body, &newtokens)
+	if e != nil {
+		log.Printf("ERROR: %v", e)
+	} else {
+		atoken = newtokens.Token
+		log.Printf("INFO: Using token from online update (%v)", atoken)
+	}
 
 	//var hist []History
 	//var history []History

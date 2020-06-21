@@ -33,7 +33,7 @@ const clientVersion = "1.9.1"
 var token string
 
 //const atoken = "kgsOOmYk3zShYrNP" // This is the Android token *nb: All Streams are HTTP Streams. Correct numberOfVideos in Playlists (best Token to use)
-const atoken = "wc8j_yBJd20zOmx0"
+var atoken = "wc8j_yBJd20zOmx0"
 
 //const atoken = "pl4Vc0hemlAXD0mN"
 const mtoken = "MbjR4DLXz1ghC4rV" // Like Android Token, supports MQA, but returns 'numberOfVideos = 0' in Playlists
@@ -53,14 +53,6 @@ const (
 var cookieJar, _ = cookiejar.New(nil)
 var c = &http.Client{
 	Jar: cookieJar,
-}
-
-type Tokens struct {
-	_Token       string `json:"//token"`
-	_TokenPhone  string `json:"//token_phone"`
-	_TokenPhone2 string `json:"//token_phone2"`
-	Token        string `json:"token"`
-	TokenPhone   string `json:"token_phone"`
 }
 
 type TidalError struct {
