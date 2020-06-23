@@ -5,6 +5,10 @@ I wrote this utility as my DAC doesn't support the Offline Files option (A&K AK7
 
 # Changelog
 
+### 0.9.4
+
+* Added in online update of tokens
+
 ### 0.9.3
 
 * Tidal changed the access tokens, so they have been rotated in the app.
