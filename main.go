@@ -216,19 +216,20 @@ func main() {
 	if e != nil {
 		log.Printf("ERROR: While trying to access updated token list (%v) (URL: %v)", e, tokenurl)
 		log.Printf("INFO: Attempting statically defined token for login (%v)", atoken)
-	}
-	defer resp.Body.Close()
-	body, e := ioutil.ReadAll(resp.Body)
-	if e != nil {
-		log.Printf("Error: %v", e)
-	}
-	var newtokens Tokens
-	e = json.Unmarshal(body, &newtokens)
-	if e != nil {
-		log.Printf("ERROR: %v", e)
 	} else {
-		atoken = newtokens.Token
-		log.Printf("INFO: Using token from online update (%v)", atoken)
+		defer resp.Body.Close()
+		body, e := ioutil.ReadAll(resp.Body)
+		if e != nil {
+			log.Printf("Error: %v", e)
+		}
+		var newtokens Tokens
+		e = json.Unmarshal(body, &newtokens)
+		if e != nil {
+			log.Printf("ERROR: %v", e)
+		} else {
+			atoken = newtokens.Token
+			log.Printf("INFO: Using token from online update (%v)", atoken)
+		}
 	}
 
 	//var hist []History

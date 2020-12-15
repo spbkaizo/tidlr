@@ -36,7 +36,9 @@ var token string
 var atoken = "wc8j_yBJd20zOmx0"
 
 //const atoken = "pl4Vc0hemlAXD0mN"
-const mtoken = "MbjR4DLXz1ghC4rV" // Like Android Token, supports MQA, but returns 'numberOfVideos = 0' in Playlists
+//const mtoken = "MbjR4DLXz1ghC4rV" // Like Android Token, supports MQA, but returns 'numberOfVideos = 0' in Playlists
+const mtoken = "kgsOOmYk3zShYrNP"
+
 // You would be wise to peruse articles on MQA before switching, e.g.
 // http://archimago.blogspot.com/2017/10/mqa-final-final-comment-simply-put-why.html#more
 
