@@ -4,9 +4,11 @@ import (
 	//"bufio"
 	"encoding/json"
 	"flag"
+	"io"
 	"io/ioutil"
 	"log"
 	"net/http"
+	"net/url"
 	"os"
 	"strings"
 	"time"
@@ -48,6 +50,7 @@ var onlyEPs = flag.Bool("eps", false, "only download eps and singles")
 var onlyPlayLists = flag.Bool("playlist", false, "only download specified playlist")
 var onlyClean = flag.Bool("clean", false, "only download clean(i.e. non-Explicit) tracks")
 var mqa = flag.Bool("mqa", false, "Prefer MQA over FLAC Quality")
+var track = flag.String("track", "", "Single Track Grab")
 
 func grabSavedAlbums(t *Tidal, ids []string) error {
 
@@ -278,6 +281,63 @@ func main() {
 		os.Exit(4)
 	}
 	log.Printf("INFO: Logged into Tidal %v, user id %v - got Session ID [%v]", t.CountryCode, t.UserID.String(), t.SessionID)
+
+	if *track != "" {
+		if strings.Contains(*track, "https://tidal.com/browse/track/") {
+			*track = strings.Replace(*track, "https://tidal.com/browse/track/", "", -1)
+		}
+		// https://tidal.com/browse/track/144280950
+		var ttrack Track
+
+		err := t.get("tracks/"+*track, &url.Values{}, &ttrack)
+		//log.Printf("%#v", ttrack)
+		u, err := t.GetStreamURL(ttrack.ID.String(), "LOSSLESS")
+		if err != nil {
+			log.Printf("%#v", err)
+			os.Exit(1)
+		}
+		if u != "" {
+			res, err := http.Get(u)
+			if err != nil {
+				log.Printf("%#v", err)
+				os.Exit(1)
+			}
+			//log.Printf("%#v", res)
+			dirs := "./"
+			var tracknum string
+			//if tr.PartOfPlaylist == false {
+			tint, _ := ttrack.TrackNumber.Int64()
+			if tint < 10 {
+				tracknum = "0" + ttrack.TrackNumber.String()
+			} else {
+				tracknum = ttrack.TrackNumber.String()
+			}
+			path := dirs + "/" + tracknum + " - " + clean(ttrack.Artist.Name) + " - " + clean(ttrack.Title)
+			_, err = os.Stat("./" + path + ".flac")
+			if !os.IsNotExist(err) {
+				os.Exit(0)
+			}
+			f, err := os.Create(path)
+			if err != nil {
+				log.Printf("%#v", err)
+				os.Exit(1)
+			}
+			io.Copy(f, res.Body)
+			res.Body.Close()
+			f.Close()
+			err = enc(dirs, ttrack)
+			if err != nil {
+				if strings.Contains(err.Error(), "flac.parseStreamInfo: invalid FLAC signature; expected") {
+					// this isn't a flac file.  return
+					log.Printf("ERROR: File %v isn't a FLAC file, removing and continuing.", path)
+				} else {
+					log.Printf("ERROR: %#v", err)
+				}
+			}
+			os.Remove(path)
+		}
+		os.Exit(0)
+	}
 
 	var ids []string
 
