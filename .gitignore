@@ -18,6 +18,9 @@ auth.json
 /.idea/
 /.vscode/
 
+# Internal planning notes (not shared)
+/PLAN.md
+
 # OS cruft
 .DS_Store
 Thumbs.db
