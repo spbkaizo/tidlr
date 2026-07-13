@@ -1,0 +1,31 @@
+# tidlr configuration. Copy to config.toml and adjust. All fields are optional;
+# omitted fields fall back to the defaults shown here.
+
+# Final ALAC library: files land as <output_dir>/<Artist>/<Album>/<Track>.m4a.
+output_dir = "~/Music/tidlr"
+
+# Scratch/state: holds the SQLite queue (queue.db) and the temporary FLAC
+# download area (downloads/) before conversion.
+work_dir = "~/.local/share/tidlr"
+
+# ffmpeg (for FLAC->ALAC conversion and HiRes remux).
+ffmpeg_bin = "ffmpeg"
+
+# Tidal auth token store. Blank reuses an existing tiddl login at
+# ~/.tiddl/auth.json. Authenticate with `tidlr login`. Everything Tidal
+# (auth, search, matching, download) is native Go — no external tools.
+auth_file = ""
+
+# Tidal track quality: low | normal | high | max  (max = HiRes lossless FLAC).
+quality = "max"
+
+# Per-album concurrent track downloads.
+download_threads = 8
+
+# How many albums to download concurrently (Tidal-bandwidth bound).
+download_workers = 3
+# How many albums to convert concurrently (CPU bound; conversion is ~cheap).
+convert_workers = 4
+
+# Keep source FLACs after converting to ALAC? false deletes them to save disk.
+keep_flac = false

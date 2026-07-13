@@ -1,0 +1,23 @@
+# Build output
+/tidlr
+tidlr
+*.exe
+
+# Local configuration (may contain machine-specific paths; not for the repo)
+/config.toml
+
+# State & data (queue DB, downloaded audio, tokens) — never in the repo
+*.db
+*.db-shm
+*.db-wal
+/downloads/
+auth.json
+
+# Editor / tooling / local session data
+/.claude/
+/.idea/
+/.vscode/
+
+# OS cruft
+.DS_Store
+Thumbs.db

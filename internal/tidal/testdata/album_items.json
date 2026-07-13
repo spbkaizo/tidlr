@@ -1,0 +1,217 @@
+{
+  "limit": 3,
+  "offset": 0,
+  "totalNumberOfItems": 14,
+  "items": [
+    {
+      "item": {
+        "id": 540168118,
+        "title": "Rough And Twisted",
+        "duration": 280,
+        "replayGain": -10.92,
+        "peak": 0.989188,
+        "allowStreaming": true,
+        "streamReady": true,
+        "payToStream": false,
+        "adSupportedStreamReady": true,
+        "djReady": true,
+        "stemReady": false,
+        "streamStartDate": "2026-07-10T00:00:00.000+0000",
+        "premiumStreamingOnly": false,
+        "trackNumber": 1,
+        "volumeNumber": 1,
+        "version": null,
+        "popularity": 69,
+        "copyright": "\u2117 2026 Promotone B.V., under exclusive licence to Universal International Music B.V.",
+        "bpm": null,
+        "key": null,
+        "keyScale": null,
+        "url": "http://www.tidal.com/track/540168118",
+        "isrc": "GBUM72508260",
+        "editable": false,
+        "explicit": true,
+        "audioQuality": "LOSSLESS",
+        "audioModes": [
+          "STEREO"
+        ],
+        "mediaMetadata": {
+          "tags": [
+            "LOSSLESS",
+            "HIRES_LOSSLESS"
+          ]
+        },
+        "upload": false,
+        "accessType": "PUBLIC",
+        "spotlighted": false,
+        "ai": false,
+        "artist": {
+          "id": 573,
+          "name": "The Rolling Stones",
+          "handle": null,
+          "type": "MAIN",
+          "picture": "a0522e3a-e677-4571-9ff4-e4f97a4e4af7"
+        },
+        "artists": [
+          {
+            "id": 573,
+            "name": "The Rolling Stones",
+            "handle": null,
+            "type": "MAIN",
+            "picture": "a0522e3a-e677-4571-9ff4-e4f97a4e4af7"
+          }
+        ],
+        "album": {
+          "id": 540168117,
+          "title": "Foreign Tongues",
+          "cover": "4f387106-3424-4076-a765-edef0ada2dac",
+          "vibrantColor": "#edd65a",
+          "videoCover": null
+        },
+        "mixes": {
+          "TRACK_MIX": "0016858fd10369baf2fbcad73c8b30"
+        }
+      },
+      "type": "track"
+    },
+    {
+      "item": {
+        "id": 540168119,
+        "title": "In The Stars",
+        "duration": 253,
+        "replayGain": -10.92,
+        "peak": 0.989383,
+        "allowStreaming": true,
+        "streamReady": true,
+        "payToStream": false,
+        "adSupportedStreamReady": true,
+        "djReady": true,
+        "stemReady": false,
+        "streamStartDate": "2026-07-10T00:00:00.000+0000",
+        "premiumStreamingOnly": false,
+        "trackNumber": 2,
+        "volumeNumber": 1,
+        "version": null,
+        "popularity": 69,
+        "copyright": "\u2117 2026 Promotone B.V., under exclusive licence to Universal International Music B.V.",
+        "bpm": null,
+        "key": null,
+        "keyScale": null,
+        "url": "http://www.tidal.com/track/540168119",
+        "isrc": "GBUM72508261",
+        "editable": false,
+        "explicit": false,
+        "audioQuality": "LOSSLESS",
+        "audioModes": [
+          "STEREO"
+        ],
+        "mediaMetadata": {
+          "tags": [
+            "LOSSLESS",
+            "HIRES_LOSSLESS"
+          ]
+        },
+        "upload": false,
+        "accessType": "PUBLIC",
+        "spotlighted": false,
+        "ai": false,
+        "artist": {
+          "id": 573,
+          "name": "The Rolling Stones",
+          "handle": null,
+          "type": "MAIN",
+          "picture": "a0522e3a-e677-4571-9ff4-e4f97a4e4af7"
+        },
+        "artists": [
+          {
+            "id": 573,
+            "name": "The Rolling Stones",
+            "handle": null,
+            "type": "MAIN",
+            "picture": "a0522e3a-e677-4571-9ff4-e4f97a4e4af7"
+          }
+        ],
+        "album": {
+          "id": 540168117,
+          "title": "Foreign Tongues",
+          "cover": "4f387106-3424-4076-a765-edef0ada2dac",
+          "vibrantColor": "#edd65a",
+          "videoCover": null
+        },
+        "mixes": {
+          "TRACK_MIX": "0010e9cf761bfe4b39ab7503040211"
+        }
+      },
+      "type": "track"
+    },
+    {
+      "item": {
+        "id": 540168120,
+        "title": "Jealous Lover",
+        "duration": 230,
+        "replayGain": -10.92,
+        "peak": 0.993702,
+        "allowStreaming": true,
+        "streamReady": true,
+        "payToStream": false,
+        "adSupportedStreamReady": true,
+        "djReady": true,
+        "stemReady": false,
+        "streamStartDate": "2026-07-10T00:00:00.000+0000",
+        "premiumStreamingOnly": false,
+        "trackNumber": 3,
+        "volumeNumber": 1,
+        "version": null,
+        "popularity": 69,
+        "copyright": "\u2117 2026 Promotone B.V., under exclusive licence to Universal International Music B.V.",
+        "bpm": null,
+        "key": null,
+        "keyScale": null,
+        "url": "http://www.tidal.com/track/540168120",
+        "isrc": "GBUM72508262",
+        "editable": false,
+        "explicit": false,
+        "audioQuality": "LOSSLESS",
+        "audioModes": [
+          "STEREO"
+        ],
+        "mediaMetadata": {
+          "tags": [
+            "LOSSLESS",
+            "HIRES_LOSSLESS"
+          ]
+        },
+        "upload": false,
+        "accessType": "PUBLIC",
+        "spotlighted": false,
+        "ai": false,
+        "artist": {
+          "id": 573,
+          "name": "The Rolling Stones",
+          "handle": null,
+          "type": "MAIN",
+          "picture": "a0522e3a-e677-4571-9ff4-e4f97a4e4af7"
+        },
+        "artists": [
+          {
+            "id": 573,
+            "name": "The Rolling Stones",
+            "handle": null,
+            "type": "MAIN",
+            "picture": "a0522e3a-e677-4571-9ff4-e4f97a4e4af7"
+          }
+        ],
+        "album": {
+          "id": 540168117,
+          "title": "Foreign Tongues",
+          "cover": "4f387106-3424-4076-a765-edef0ada2dac",
+          "vibrantColor": "#edd65a",
+          "videoCover": null
+        },
+        "mixes": {
+          "TRACK_MIX": "00169dd6352d556e7573569a581468"
+        }
+      },
+      "type": "track"
+    }
+  ]
+}

@@ -1,0 +1,581 @@
+{
+  "limit": 10,
+  "offset": 0,
+  "totalNumberOfItems": 24,
+  "items": [
+    {
+      "id": 532589476,
+      "title": "you seem pretty sad for a girl so in love",
+      "duration": 3064,
+      "streamReady": true,
+      "payToStream": false,
+      "adSupportedStreamReady": true,
+      "djReady": true,
+      "stemReady": false,
+      "streamStartDate": "2026-06-12T00:00:00.000+0000",
+      "allowStreaming": true,
+      "premiumStreamingOnly": false,
+      "numberOfTracks": 13,
+      "numberOfVideos": 0,
+      "numberOfVolumes": 1,
+      "releaseDate": "2026-06-12",
+      "copyright": "\u00a9 2026 Olivia Rodrigo, under exclusive license to Geffen Records",
+      "type": "ALBUM",
+      "version": null,
+      "url": "http://www.tidal.com/album/532589476",
+      "cover": "2ff7d003-30a1-452f-8f56-5a804851802f",
+      "vibrantColor": "#f5aa96",
+      "videoCover": null,
+      "explicit": false,
+      "upc": "00881061110392",
+      "popularity": 65,
+      "audioQuality": "LOSSLESS",
+      "audioModes": [
+        "STEREO"
+      ],
+      "mediaMetadata": {
+        "tags": [
+          "LOSSLESS",
+          "HIRES_LOSSLESS"
+        ]
+      },
+      "upload": false,
+      "ai": false,
+      "artist": {
+        "id": 8161298,
+        "name": "Olivia Rodrigo",
+        "handle": null,
+        "type": "MAIN",
+        "picture": "d16ff03a-7c1b-4d54-994f-ad0cd415cd91"
+      },
+      "artists": [
+        {
+          "id": 8161298,
+          "name": "Olivia Rodrigo",
+          "handle": null,
+          "type": "MAIN",
+          "picture": "d16ff03a-7c1b-4d54-994f-ad0cd415cd91"
+        }
+      ]
+    },
+    {
+      "id": 534736928,
+      "title": "you seem pretty sad for a girl so in love",
+      "duration": 3064,
+      "streamReady": true,
+      "payToStream": false,
+      "adSupportedStreamReady": true,
+      "djReady": true,
+      "stemReady": false,
+      "streamStartDate": "2026-06-18T00:00:00.000+0000",
+      "allowStreaming": true,
+      "premiumStreamingOnly": false,
+      "numberOfTracks": 13,
+      "numberOfVideos": 0,
+      "numberOfVolumes": 1,
+      "releaseDate": "2026-06-12",
+      "copyright": "\u00a9 2026 Olivia Rodrigo, under exclusive license to Geffen Records",
+      "type": "ALBUM",
+      "version": null,
+      "url": "http://www.tidal.com/album/534736928",
+      "cover": "6545c785-f2ab-4b7e-b513-7bad93c89672",
+      "vibrantColor": "#f5aa96",
+      "videoCover": null,
+      "explicit": false,
+      "upc": "00881061125068",
+      "popularity": 65,
+      "audioQuality": "LOW",
+      "audioModes": [
+        "DOLBY_ATMOS"
+      ],
+      "mediaMetadata": {
+        "tags": [
+          "DOLBY_ATMOS"
+        ]
+      },
+      "upload": false,
+      "ai": false,
+      "artist": {
+        "id": 8161298,
+        "name": "Olivia Rodrigo",
+        "handle": null,
+        "type": "MAIN",
+        "picture": "d16ff03a-7c1b-4d54-994f-ad0cd415cd91"
+      },
+      "artists": [
+        {
+          "id": 8161298,
+          "name": "Olivia Rodrigo",
+          "handle": null,
+          "type": "MAIN",
+          "picture": "d16ff03a-7c1b-4d54-994f-ad0cd415cd91"
+        }
+      ]
+    },
+    {
+      "id": 533158651,
+      "title": "you seem pretty sad for a girl so in love",
+      "duration": 3064,
+      "streamReady": true,
+      "payToStream": false,
+      "adSupportedStreamReady": true,
+      "djReady": true,
+      "stemReady": false,
+      "streamStartDate": "2026-06-12T00:00:00.000+0000",
+      "allowStreaming": true,
+      "premiumStreamingOnly": false,
+      "numberOfTracks": 13,
+      "numberOfVideos": 0,
+      "numberOfVolumes": 1,
+      "releaseDate": "2026-06-12",
+      "copyright": "\u00a9 2026 Olivia Rodrigo, under exclusive license to Geffen Records",
+      "type": "ALBUM",
+      "version": null,
+      "url": "http://www.tidal.com/album/533158651",
+      "cover": "61ebc648-dbf7-403d-9c95-72c96202a14a",
+      "vibrantColor": "#f5ab96",
+      "videoCover": null,
+      "explicit": true,
+      "upc": "00881061110422",
+      "popularity": 65,
+      "audioQuality": "LOW",
+      "audioModes": [
+        "DOLBY_ATMOS"
+      ],
+      "mediaMetadata": {
+        "tags": [
+          "DOLBY_ATMOS"
+        ]
+      },
+      "upload": false,
+      "ai": false,
+      "artist": {
+        "id": 8161298,
+        "name": "Olivia Rodrigo",
+        "handle": null,
+        "type": "MAIN",
+        "picture": "d16ff03a-7c1b-4d54-994f-ad0cd415cd91"
+      },
+      "artists": [
+        {
+          "id": 8161298,
+          "name": "Olivia Rodrigo",
+          "handle": null,
+          "type": "MAIN",
+          "picture": "d16ff03a-7c1b-4d54-994f-ad0cd415cd91"
+        }
+      ]
+    },
+    {
+      "id": 532396298,
+      "title": "you seem pretty sad for a girl so in love",
+      "duration": 3064,
+      "streamReady": true,
+      "payToStream": false,
+      "adSupportedStreamReady": true,
+      "djReady": true,
+      "stemReady": false,
+      "streamStartDate": "2026-06-12T00:00:00.000+0000",
+      "allowStreaming": true,
+      "premiumStreamingOnly": false,
+      "numberOfTracks": 13,
+      "numberOfVideos": 0,
+      "numberOfVolumes": 1,
+      "releaseDate": "2026-06-12",
+      "copyright": "\u00a9 2026 Olivia Rodrigo, under exclusive license to Geffen Records",
+      "type": "ALBUM",
+      "version": null,
+      "url": "http://www.tidal.com/album/532396298",
+      "cover": "a64139f3-56da-401b-9e84-4462ed3b9b9f",
+      "vibrantColor": "#f5ab96",
+      "videoCover": null,
+      "explicit": true,
+      "upc": "00199957766173",
+      "popularity": 75,
+      "audioQuality": "LOSSLESS",
+      "audioModes": [
+        "STEREO"
+      ],
+      "mediaMetadata": {
+        "tags": [
+          "LOSSLESS",
+          "HIRES_LOSSLESS"
+        ]
+      },
+      "upload": false,
+      "ai": false,
+      "artist": {
+        "id": 8161298,
+        "name": "Olivia Rodrigo",
+        "handle": null,
+        "type": "MAIN",
+        "picture": "d16ff03a-7c1b-4d54-994f-ad0cd415cd91"
+      },
+      "artists": [
+        {
+          "id": 8161298,
+          "name": "Olivia Rodrigo",
+          "handle": null,
+          "type": "MAIN",
+          "picture": "d16ff03a-7c1b-4d54-994f-ad0cd415cd91"
+        }
+      ]
+    },
+    {
+      "id": 328061338,
+      "title": "The Hunger Games: The Ballad of Songbirds & Snakes (Music From & Inspired By)",
+      "duration": 2995,
+      "streamReady": true,
+      "payToStream": false,
+      "adSupportedStreamReady": true,
+      "djReady": true,
+      "stemReady": false,
+      "streamStartDate": "2023-11-17T00:00:00.000+0000",
+      "allowStreaming": true,
+      "premiumStreamingOnly": false,
+      "numberOfTracks": 17,
+      "numberOfVideos": 0,
+      "numberOfVolumes": 1,
+      "releaseDate": "2024-02-02",
+      "copyright": "\u00a9 2023 Lions Gate Entertainment Inc., under exclusive license to Geffen Records",
+      "type": "ALBUM",
+      "version": "Music From & Inspired By",
+      "url": "http://www.tidal.com/album/328061338",
+      "cover": "bfe5751f-6e28-4cbb-ab6d-50043ab00a73",
+      "vibrantColor": "#ead791",
+      "videoCover": null,
+      "explicit": false,
+      "upc": "00602458762099",
+      "popularity": 68,
+      "audioQuality": "LOSSLESS",
+      "audioModes": [
+        "STEREO"
+      ],
+      "mediaMetadata": {
+        "tags": [
+          "LOSSLESS",
+          "HIRES_LOSSLESS"
+        ]
+      },
+      "upload": false,
+      "ai": false,
+      "artist": {
+        "id": 8161298,
+        "name": "Olivia Rodrigo",
+        "handle": null,
+        "type": "MAIN",
+        "picture": "18790a96-b24e-4f46-85c7-ff4eb2848c82"
+      },
+      "artists": [
+        {
+          "id": 8161298,
+          "name": "Olivia Rodrigo",
+          "handle": null,
+          "type": "MAIN",
+          "picture": "18790a96-b24e-4f46-85c7-ff4eb2848c82"
+        },
+        {
+          "id": 24173177,
+          "name": "Rachel Zegler",
+          "handle": null,
+          "type": "MAIN",
+          "picture": null
+        },
+        {
+          "id": 7022920,
+          "name": "Flatland Cavalry",
+          "handle": null,
+          "type": "MAIN",
+          "picture": "e736eaed-32e6-4b90-9814-46a1c668cf5e"
+        }
+      ]
+    },
+    {
+      "id": 328061241,
+      "title": "The Hunger Games: The Ballad of Songbirds & Snakes (Music From & Inspired By)",
+      "duration": 2995,
+      "streamReady": true,
+      "payToStream": false,
+      "adSupportedStreamReady": true,
+      "djReady": true,
+      "stemReady": false,
+      "streamStartDate": "2023-11-17T00:00:00.000+0000",
+      "allowStreaming": true,
+      "premiumStreamingOnly": false,
+      "numberOfTracks": 17,
+      "numberOfVideos": 0,
+      "numberOfVolumes": 1,
+      "releaseDate": "2024-02-02",
+      "copyright": "\u00a9 2023 Lions Gate Entertainment Inc., under exclusive license to Geffen Records",
+      "type": "ALBUM",
+      "version": "Music From & Inspired By",
+      "url": "http://www.tidal.com/album/328061241",
+      "cover": "c8c9fb2d-bc6b-4e70-9870-d93f4503f09f",
+      "vibrantColor": "#ead791",
+      "videoCover": null,
+      "explicit": false,
+      "upc": "00602458762082",
+      "popularity": 48,
+      "audioQuality": "LOSSLESS",
+      "audioModes": [
+        "STEREO"
+      ],
+      "mediaMetadata": {
+        "tags": [
+          "LOSSLESS"
+        ]
+      },
+      "upload": false,
+      "ai": false,
+      "artist": {
+        "id": 8161298,
+        "name": "Olivia Rodrigo",
+        "handle": null,
+        "type": "MAIN",
+        "picture": "fbce4477-8ed4-418f-a5f6-8513c2009ff5"
+      },
+      "artists": [
+        {
+          "id": 8161298,
+          "name": "Olivia Rodrigo",
+          "handle": null,
+          "type": "MAIN",
+          "picture": "fbce4477-8ed4-418f-a5f6-8513c2009ff5"
+        },
+        {
+          "id": 24173177,
+          "name": "Rachel Zegler",
+          "handle": null,
+          "type": "MAIN",
+          "picture": null
+        },
+        {
+          "id": 7022920,
+          "name": "Flatland Cavalry",
+          "handle": null,
+          "type": "MAIN",
+          "picture": "91831fb9-3d46-45c6-8eb8-df71b3dfc058"
+        }
+      ]
+    },
+    {
+      "id": 352285213,
+      "title": "GUTS (spilled)",
+      "duration": 3277,
+      "streamReady": true,
+      "payToStream": false,
+      "adSupportedStreamReady": true,
+      "djReady": true,
+      "stemReady": false,
+      "streamStartDate": "2024-03-22T00:00:00.000+0000",
+      "allowStreaming": true,
+      "premiumStreamingOnly": false,
+      "numberOfTracks": 17,
+      "numberOfVideos": 0,
+      "numberOfVolumes": 1,
+      "releaseDate": "2023-09-08",
+      "copyright": "\u00a9 2024 Olivia Rodrigo, under exclusive license to Geffen Records",
+      "type": "ALBUM",
+      "version": null,
+      "url": "http://www.tidal.com/album/352285213",
+      "cover": "7407a9c6-6c2a-4ad8-976f-c4814300ffd9",
+      "vibrantColor": "#a93c3f",
+      "videoCover": null,
+      "explicit": true,
+      "upc": "00602465256338",
+      "popularity": 75,
+      "audioQuality": "LOSSLESS",
+      "audioModes": [
+        "STEREO"
+      ],
+      "mediaMetadata": {
+        "tags": [
+          "LOSSLESS",
+          "HIRES_LOSSLESS"
+        ]
+      },
+      "upload": false,
+      "ai": false,
+      "artist": {
+        "id": 8161298,
+        "name": "Olivia Rodrigo",
+        "handle": null,
+        "type": "MAIN",
+        "picture": "18790a96-b24e-4f46-85c7-ff4eb2848c82"
+      },
+      "artists": [
+        {
+          "id": 8161298,
+          "name": "Olivia Rodrigo",
+          "handle": null,
+          "type": "MAIN",
+          "picture": "18790a96-b24e-4f46-85c7-ff4eb2848c82"
+        }
+      ]
+    },
+    {
+      "id": 314715154,
+      "title": "GUTS",
+      "duration": 2358,
+      "streamReady": true,
+      "payToStream": false,
+      "adSupportedStreamReady": true,
+      "djReady": true,
+      "stemReady": false,
+      "streamStartDate": "2023-09-08T00:00:00.000+0000",
+      "allowStreaming": true,
+      "premiumStreamingOnly": false,
+      "numberOfTracks": 12,
+      "numberOfVideos": 0,
+      "numberOfVolumes": 1,
+      "releaseDate": "2023-09-08",
+      "copyright": "\u00a9 2023 Olivia Rodrigo, under exclusive license to Geffen Records",
+      "type": "ALBUM",
+      "version": null,
+      "url": "http://www.tidal.com/album/314715154",
+      "cover": "d96c433e-6e73-4f2d-83a0-6e3c40b56d63",
+      "vibrantColor": "#841f2e",
+      "videoCover": null,
+      "explicit": false,
+      "upc": "00602458183030",
+      "popularity": 51,
+      "audioQuality": "LOSSLESS",
+      "audioModes": [
+        "STEREO"
+      ],
+      "mediaMetadata": {
+        "tags": [
+          "LOSSLESS",
+          "HIRES_LOSSLESS"
+        ]
+      },
+      "upload": false,
+      "ai": false,
+      "artist": {
+        "id": 8161298,
+        "name": "Olivia Rodrigo",
+        "handle": null,
+        "type": "MAIN",
+        "picture": "18790a96-b24e-4f46-85c7-ff4eb2848c82"
+      },
+      "artists": [
+        {
+          "id": 8161298,
+          "name": "Olivia Rodrigo",
+          "handle": null,
+          "type": "MAIN",
+          "picture": "18790a96-b24e-4f46-85c7-ff4eb2848c82"
+        }
+      ]
+    },
+    {
+      "id": 353672969,
+      "title": "GUTS (spilled)",
+      "duration": 3277,
+      "streamReady": true,
+      "payToStream": false,
+      "adSupportedStreamReady": true,
+      "djReady": true,
+      "stemReady": false,
+      "streamStartDate": "2024-03-22T00:00:00.000+0000",
+      "allowStreaming": true,
+      "premiumStreamingOnly": false,
+      "numberOfTracks": 17,
+      "numberOfVideos": 0,
+      "numberOfVolumes": 1,
+      "releaseDate": "2023-09-08",
+      "copyright": "\u00a9 2024 Olivia Rodrigo, under exclusive license to Geffen Records",
+      "type": "ALBUM",
+      "version": null,
+      "url": "http://www.tidal.com/album/353672969",
+      "cover": "f3c04b36-e6a4-4054-8c96-501491f7c194",
+      "vibrantColor": "#a93c3f",
+      "videoCover": null,
+      "explicit": true,
+      "upc": "00602465591019",
+      "popularity": 53,
+      "audioQuality": "LOW",
+      "audioModes": [
+        "DOLBY_ATMOS"
+      ],
+      "mediaMetadata": {
+        "tags": [
+          "DOLBY_ATMOS"
+        ]
+      },
+      "upload": false,
+      "ai": false,
+      "artist": {
+        "id": 8161298,
+        "name": "Olivia Rodrigo",
+        "handle": null,
+        "type": "MAIN",
+        "picture": "18790a96-b24e-4f46-85c7-ff4eb2848c82"
+      },
+      "artists": [
+        {
+          "id": 8161298,
+          "name": "Olivia Rodrigo",
+          "handle": null,
+          "type": "MAIN",
+          "picture": "18790a96-b24e-4f46-85c7-ff4eb2848c82"
+        }
+      ]
+    },
+    {
+      "id": 314676437,
+      "title": "GUTS",
+      "duration": 2358,
+      "streamReady": true,
+      "payToStream": false,
+      "adSupportedStreamReady": true,
+      "djReady": true,
+      "stemReady": false,
+      "streamStartDate": "2023-09-08T00:00:00.000+0000",
+      "allowStreaming": true,
+      "premiumStreamingOnly": false,
+      "numberOfTracks": 12,
+      "numberOfVideos": 0,
+      "numberOfVolumes": 1,
+      "releaseDate": "2023-09-08",
+      "copyright": "\u00a9 2023 Olivia Rodrigo, under exclusive license to Geffen Records",
+      "type": "ALBUM",
+      "version": null,
+      "url": "http://www.tidal.com/album/314676437",
+      "cover": "bd4e3a38-69f6-40b4-848d-b2cfe10667a3",
+      "vibrantColor": "#88212f",
+      "videoCover": null,
+      "explicit": true,
+      "upc": "00602458182613",
+      "popularity": 82,
+      "audioQuality": "LOSSLESS",
+      "audioModes": [
+        "STEREO"
+      ],
+      "mediaMetadata": {
+        "tags": [
+          "LOSSLESS",
+          "HIRES_LOSSLESS"
+        ]
+      },
+      "upload": false,
+      "ai": false,
+      "artist": {
+        "id": 8161298,
+        "name": "Olivia Rodrigo",
+        "handle": null,
+        "type": "MAIN",
+        "picture": "18790a96-b24e-4f46-85c7-ff4eb2848c82"
+      },
+      "artists": [
+        {
+          "id": 8161298,
+          "name": "Olivia Rodrigo",
+          "handle": null,
+          "type": "MAIN",
+          "picture": "18790a96-b24e-4f46-85c7-ff4eb2848c82"
+        }
+      ]
+    }
+  ]
+}

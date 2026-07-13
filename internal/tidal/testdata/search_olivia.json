@@ -1,0 +1,1385 @@
+{
+  "artists": {
+    "limit": 10,
+    "offset": 0,
+    "totalNumberOfItems": 5,
+    "items": [
+      {
+        "id": 8161298,
+        "name": "Olivia Rodrigo",
+        "artistTypes": [
+          "ARTIST",
+          "CONTRIBUTOR"
+        ],
+        "url": "http://www.tidal.com/artist/8161298",
+        "picture": "d16ff03a-7c1b-4d54-994f-ad0cd415cd91",
+        "selectedAlbumCoverFallback": null,
+        "popularity": 0,
+        "artistRoles": [
+          {
+            "categoryId": -1,
+            "category": "Artist"
+          },
+          {
+            "categoryId": 2,
+            "category": "Songwriter"
+          },
+          {
+            "categoryId": 11,
+            "category": "Performer"
+          },
+          {
+            "categoryId": 10,
+            "category": "Production team"
+          },
+          {
+            "categoryId": 1,
+            "category": "Producer"
+          },
+          {
+            "categoryId": 3,
+            "category": "Engineer"
+          }
+        ],
+        "mixes": {
+          "ARTIST_MIX": "0001c3763294b7b1b0f749c41f35ed"
+        },
+        "handle": null,
+        "userId": null,
+        "spotlighted": false
+      },
+      {
+        "id": 15686643,
+        "name": "Gracie Abrams",
+        "artistTypes": [
+          "ARTIST",
+          "CONTRIBUTOR"
+        ],
+        "url": "http://www.tidal.com/artist/15686643",
+        "picture": "5c131abe-b0c9-43f4-96b8-ca5a130420f6",
+        "selectedAlbumCoverFallback": null,
+        "popularity": 0,
+        "artistRoles": [
+          {
+            "categoryId": -1,
+            "category": "Artist"
+          },
+          {
+            "categoryId": 2,
+            "category": "Songwriter"
+          },
+          {
+            "categoryId": 11,
+            "category": "Performer"
+          },
+          {
+            "categoryId": 1,
+            "category": "Producer"
+          },
+          {
+            "categoryId": 10,
+            "category": "Production team"
+          },
+          {
+            "categoryId": 99,
+            "category": "Misc"
+          }
+        ],
+        "mixes": {
+          "ARTIST_MIX": "0009071ec4b081e78428c5ca5e0120"
+        },
+        "handle": null,
+        "userId": null,
+        "spotlighted": false
+      },
+      {
+        "id": 7142197,
+        "name": "Olivia O'Brien",
+        "artistTypes": [
+          "ARTIST",
+          "CONTRIBUTOR"
+        ],
+        "url": "http://www.tidal.com/artist/7142197",
+        "picture": "b942f815-f174-44fe-b6d4-95189ce45903",
+        "selectedAlbumCoverFallback": null,
+        "popularity": 0,
+        "artistRoles": [
+          {
+            "categoryId": -1,
+            "category": "Artist"
+          },
+          {
+            "categoryId": 2,
+            "category": "Songwriter"
+          },
+          {
+            "categoryId": 11,
+            "category": "Performer"
+          }
+        ],
+        "mixes": {
+          "ARTIST_MIX": "000ba5c4f522be96ac204a60a7eb2c"
+        },
+        "handle": null,
+        "userId": null,
+        "spotlighted": false
+      },
+      {
+        "id": 7121283,
+        "name": "gnash",
+        "artistTypes": [
+          "ARTIST",
+          "CONTRIBUTOR"
+        ],
+        "url": "http://www.tidal.com/artist/7121283",
+        "picture": "27680fd1-72cb-497e-970e-c7fc53e8a570",
+        "selectedAlbumCoverFallback": null,
+        "popularity": 0,
+        "artistRoles": [
+          {
+            "categoryId": -1,
+            "category": "Artist"
+          },
+          {
+            "categoryId": 11,
+            "category": "Performer"
+          },
+          {
+            "categoryId": 1,
+            "category": "Producer"
+          },
+          {
+            "categoryId": 2,
+            "category": "Songwriter"
+          },
+          {
+            "categoryId": 10,
+            "category": "Production team"
+          },
+          {
+            "categoryId": 3,
+            "category": "Engineer"
+          },
+          {
+            "categoryId": 99,
+            "category": "Misc"
+          }
+        ],
+        "mixes": {
+          "ARTIST_MIX": "00009a1d026528af39046c1c9cabf9"
+        },
+        "handle": null,
+        "userId": null,
+        "spotlighted": false
+      },
+      {
+        "id": 7126014,
+        "name": "JOY.",
+        "artistTypes": [
+          "ARTIST",
+          "CONTRIBUTOR"
+        ],
+        "url": "http://www.tidal.com/artist/7126014",
+        "picture": "a4884759-8722-42d0-b730-dd1c30da3f01",
+        "selectedAlbumCoverFallback": null,
+        "popularity": 0,
+        "artistRoles": [
+          {
+            "categoryId": -1,
+            "category": "Artist"
+          },
+          {
+            "categoryId": 1,
+            "category": "Producer"
+          },
+          {
+            "categoryId": 11,
+            "category": "Performer"
+          },
+          {
+            "categoryId": 2,
+            "category": "Songwriter"
+          },
+          {
+            "categoryId": 10,
+            "category": "Production team"
+          },
+          {
+            "categoryId": 3,
+            "category": "Engineer"
+          },
+          {
+            "categoryId": 99,
+            "category": "Misc"
+          }
+        ],
+        "mixes": {
+          "ARTIST_MIX": "000e0b322322821251b713fe078efd"
+        },
+        "handle": null,
+        "userId": null,
+        "spotlighted": false
+      }
+    ]
+  },
+  "albums": {
+    "limit": 10,
+    "offset": 0,
+    "totalNumberOfItems": 22,
+    "items": [
+      {
+        "id": 533158651,
+        "title": "you seem pretty sad for a girl so in love",
+        "duration": 3064,
+        "streamReady": true,
+        "payToStream": false,
+        "adSupportedStreamReady": true,
+        "djReady": true,
+        "stemReady": false,
+        "streamStartDate": "2026-06-12T00:00:00.000+0000",
+        "allowStreaming": true,
+        "premiumStreamingOnly": false,
+        "numberOfTracks": 13,
+        "numberOfVideos": 0,
+        "numberOfVolumes": 1,
+        "releaseDate": "2026-06-12",
+        "copyright": "\u00a9 2026 Olivia Rodrigo, under exclusive license to Geffen Records",
+        "type": "ALBUM",
+        "version": null,
+        "url": "http://www.tidal.com/album/533158651",
+        "cover": "61ebc648-dbf7-403d-9c95-72c96202a14a",
+        "vibrantColor": "#f5ab96",
+        "videoCover": null,
+        "explicit": true,
+        "upc": "00881061110422",
+        "popularity": 65,
+        "audioQuality": "LOW",
+        "audioModes": [
+          "DOLBY_ATMOS"
+        ],
+        "mediaMetadata": {
+          "tags": [
+            "DOLBY_ATMOS"
+          ]
+        },
+        "upload": false,
+        "ai": false,
+        "artists": [
+          {
+            "id": 8161298,
+            "name": "Olivia Rodrigo",
+            "handle": null,
+            "type": "MAIN",
+            "picture": "d16ff03a-7c1b-4d54-994f-ad0cd415cd91"
+          }
+        ]
+      },
+      {
+        "id": 44265175,
+        "title": "Eyes Wide Open",
+        "duration": 2436,
+        "streamReady": true,
+        "payToStream": false,
+        "adSupportedStreamReady": true,
+        "djReady": true,
+        "stemReady": false,
+        "streamStartDate": "2015-04-13T00:00:00.000+0000",
+        "allowStreaming": true,
+        "premiumStreamingOnly": false,
+        "numberOfTracks": 12,
+        "numberOfVideos": 0,
+        "numberOfVolumes": 1,
+        "releaseDate": "2015-04-14",
+        "copyright": "\u00a9 2015 Hollywood Records, Inc.",
+        "type": "ALBUM",
+        "version": null,
+        "url": "http://www.tidal.com/album/44265175",
+        "cover": "44745350-aa53-421c-9494-ef95f3220474",
+        "vibrantColor": "#e8dbc1",
+        "videoCover": null,
+        "explicit": false,
+        "upc": "00050087323424",
+        "popularity": 0,
+        "audioQuality": "LOSSLESS",
+        "audioModes": [
+          "STEREO"
+        ],
+        "mediaMetadata": {
+          "tags": [
+            "LOSSLESS"
+          ]
+        },
+        "upload": false,
+        "ai": false,
+        "artists": [
+          {
+            "id": 4751756,
+            "name": "Sabrina Carpenter",
+            "handle": null,
+            "type": "MAIN",
+            "picture": "854a8a1a-43f1-44b2-8e59-474e83abd578"
+          }
+        ]
+      },
+      {
+        "id": 352285213,
+        "title": "GUTS (spilled)",
+        "duration": 3277,
+        "streamReady": true,
+        "payToStream": false,
+        "adSupportedStreamReady": true,
+        "djReady": true,
+        "stemReady": false,
+        "streamStartDate": "2024-03-22T00:00:00.000+0000",
+        "allowStreaming": true,
+        "premiumStreamingOnly": false,
+        "numberOfTracks": 17,
+        "numberOfVideos": 0,
+        "numberOfVolumes": 1,
+        "releaseDate": "2023-09-08",
+        "copyright": "\u00a9 2024 Olivia Rodrigo, under exclusive license to Geffen Records",
+        "type": "ALBUM",
+        "version": null,
+        "url": "http://www.tidal.com/album/352285213",
+        "cover": "7407a9c6-6c2a-4ad8-976f-c4814300ffd9",
+        "vibrantColor": "#a93c3f",
+        "videoCover": null,
+        "explicit": true,
+        "upc": "00602465256338",
+        "popularity": 0,
+        "audioQuality": "LOSSLESS",
+        "audioModes": [
+          "STEREO"
+        ],
+        "mediaMetadata": {
+          "tags": [
+            "LOSSLESS",
+            "HIRES_LOSSLESS"
+          ]
+        },
+        "upload": false,
+        "ai": false,
+        "artists": [
+          {
+            "id": 8161298,
+            "name": "Olivia Rodrigo",
+            "handle": null,
+            "type": "MAIN",
+            "picture": "18790a96-b24e-4f46-85c7-ff4eb2848c82"
+          }
+        ]
+      },
+      {
+        "id": 282298746,
+        "title": "emails i can\u2019t send fwd:",
+        "duration": 3066,
+        "streamReady": true,
+        "payToStream": false,
+        "adSupportedStreamReady": true,
+        "djReady": true,
+        "stemReady": false,
+        "streamStartDate": "2023-03-17T00:00:00.000+0000",
+        "allowStreaming": true,
+        "premiumStreamingOnly": false,
+        "numberOfTracks": 17,
+        "numberOfVideos": 0,
+        "numberOfVolumes": 1,
+        "releaseDate": "2022-07-15",
+        "copyright": "\u00a9 2023 Island Records, a division of UMG Recordings, Inc.",
+        "type": "ALBUM",
+        "version": null,
+        "url": "http://www.tidal.com/album/282298746",
+        "cover": "b0265a58-8b2a-4cc4-beb2-5253cd94c0d5",
+        "vibrantColor": "#fcdfbf",
+        "videoCover": null,
+        "explicit": true,
+        "upc": "00602448997753",
+        "popularity": 0,
+        "audioQuality": "LOW",
+        "audioModes": [
+          "DOLBY_ATMOS"
+        ],
+        "mediaMetadata": {
+          "tags": [
+            "DOLBY_ATMOS"
+          ]
+        },
+        "upload": false,
+        "ai": false,
+        "artists": [
+          {
+            "id": 4751756,
+            "name": "Sabrina Carpenter",
+            "handle": null,
+            "type": "MAIN",
+            "picture": "854a8a1a-43f1-44b2-8e59-474e83abd578"
+          }
+        ]
+      },
+      {
+        "id": 184786865,
+        "title": "SOUR",
+        "duration": 2088,
+        "streamReady": true,
+        "payToStream": false,
+        "adSupportedStreamReady": true,
+        "djReady": true,
+        "stemReady": false,
+        "streamStartDate": "2021-05-21T00:00:00.000+0000",
+        "allowStreaming": true,
+        "premiumStreamingOnly": false,
+        "numberOfTracks": 11,
+        "numberOfVideos": 0,
+        "numberOfVolumes": 1,
+        "releaseDate": "2021-05-21",
+        "copyright": "\u00a9 2021 Olivia Rodrigo, under exclusive license to Geffen Records",
+        "type": "ALBUM",
+        "version": null,
+        "url": "http://www.tidal.com/album/184786865",
+        "cover": "7dae2503-885d-4c37-9b02-14d8dca16cfe",
+        "vibrantColor": "#8d84c6",
+        "videoCover": null,
+        "explicit": true,
+        "upc": "00602438101443",
+        "popularity": 0,
+        "audioQuality": "LOSSLESS",
+        "audioModes": [
+          "STEREO"
+        ],
+        "mediaMetadata": {
+          "tags": [
+            "LOSSLESS"
+          ]
+        },
+        "upload": false,
+        "ai": false,
+        "artists": [
+          {
+            "id": 8161298,
+            "name": "Olivia Rodrigo",
+            "handle": null,
+            "type": "MAIN",
+            "picture": "a43e258b-952a-4fea-954c-13675ad27b28"
+          }
+        ]
+      },
+      {
+        "id": 454249621,
+        "title": "hickey",
+        "duration": 2305,
+        "streamReady": true,
+        "payToStream": false,
+        "adSupportedStreamReady": true,
+        "djReady": true,
+        "stemReady": false,
+        "streamStartDate": "2025-08-22T00:00:00.000+0000",
+        "allowStreaming": true,
+        "premiumStreamingOnly": false,
+        "numberOfTracks": 13,
+        "numberOfVideos": 0,
+        "numberOfVolumes": 1,
+        "releaseDate": "2025-08-22",
+        "copyright": "\u00a9 2025 Ourness Pty Ltd, under exclusive license to UMG Recordings, Inc.",
+        "type": "ALBUM",
+        "version": null,
+        "url": "http://www.tidal.com/album/454249621",
+        "cover": "0e75f896-eeec-42ae-bd4b-b79b8e02ddfd",
+        "vibrantColor": "#93483f",
+        "videoCover": null,
+        "explicit": true,
+        "upc": "00602478282737",
+        "popularity": 0,
+        "audioQuality": "LOSSLESS",
+        "audioModes": [
+          "STEREO"
+        ],
+        "mediaMetadata": {
+          "tags": [
+            "LOSSLESS",
+            "HIRES_LOSSLESS"
+          ]
+        },
+        "upload": false,
+        "ai": false,
+        "artists": [
+          {
+            "id": 21925535,
+            "name": "Royel Otis",
+            "handle": null,
+            "type": "MAIN",
+            "picture": "ca340e6f-95f3-4f5d-a6d0-a61206b047d6"
+          }
+        ]
+      },
+      {
+        "id": 163601165,
+        "title": "Joshua Bassett",
+        "duration": 1177,
+        "streamReady": true,
+        "payToStream": false,
+        "adSupportedStreamReady": true,
+        "djReady": true,
+        "stemReady": false,
+        "streamStartDate": "2021-01-14T23:00:00.000+0000",
+        "allowStreaming": true,
+        "premiumStreamingOnly": false,
+        "numberOfTracks": 6,
+        "numberOfVideos": 0,
+        "numberOfVolumes": 1,
+        "releaseDate": "2021-03-12",
+        "copyright": "\u00a9 2021 Warner Records Inc.",
+        "type": "ALBUM",
+        "version": null,
+        "url": "http://www.tidal.com/album/163601165",
+        "cover": "c36fc7b3-6233-45aa-b5b3-014720f5a273",
+        "vibrantColor": "#FFFFFF",
+        "videoCover": null,
+        "explicit": false,
+        "upc": "093624888444",
+        "popularity": 0,
+        "audioQuality": "LOSSLESS",
+        "audioModes": [
+          "STEREO"
+        ],
+        "mediaMetadata": {
+          "tags": [
+            "LOSSLESS",
+            "HIRES_LOSSLESS"
+          ]
+        },
+        "upload": false,
+        "ai": false,
+        "artists": [
+          {
+            "id": 16109765,
+            "name": "Joshua Bassett",
+            "handle": null,
+            "type": "MAIN",
+            "picture": "3508b549-42d4-4fc7-b56c-f784af05daca"
+          }
+        ]
+      },
+      {
+        "id": 108024848,
+        "title": "Was It Even Real?",
+        "duration": 1960,
+        "streamReady": true,
+        "payToStream": false,
+        "adSupportedStreamReady": true,
+        "djReady": true,
+        "stemReady": false,
+        "streamStartDate": "2019-04-26T00:00:00.000+0000",
+        "allowStreaming": true,
+        "premiumStreamingOnly": false,
+        "numberOfTracks": 10,
+        "numberOfVideos": 0,
+        "numberOfVolumes": 1,
+        "releaseDate": "2019-04-26",
+        "copyright": "\u00a9 2019 Island Records, a division of UMG Recordings, Inc.",
+        "type": "ALBUM",
+        "version": null,
+        "url": "http://www.tidal.com/album/108024848",
+        "cover": "36c393af-71cd-481b-8eab-951b1a9f0571",
+        "vibrantColor": "#e3b03f",
+        "videoCover": null,
+        "explicit": true,
+        "upc": "00602577583322",
+        "popularity": 0,
+        "audioQuality": "LOSSLESS",
+        "audioModes": [
+          "STEREO"
+        ],
+        "mediaMetadata": {
+          "tags": [
+            "LOSSLESS",
+            "HIRES_LOSSLESS"
+          ]
+        },
+        "upload": false,
+        "ai": false,
+        "artists": [
+          {
+            "id": 7142197,
+            "name": "Olivia O'Brien",
+            "handle": null,
+            "type": "MAIN",
+            "picture": "b942f815-f174-44fe-b6d4-95189ce45903"
+          }
+        ]
+      },
+      {
+        "id": 394021910,
+        "title": "The Secret of Us (Deluxe)",
+        "duration": 4339,
+        "streamReady": true,
+        "payToStream": false,
+        "adSupportedStreamReady": true,
+        "djReady": true,
+        "stemReady": false,
+        "streamStartDate": "2024-10-18T00:00:00.000+0000",
+        "allowStreaming": true,
+        "premiumStreamingOnly": false,
+        "numberOfTracks": 20,
+        "numberOfVideos": 0,
+        "numberOfVolumes": 1,
+        "releaseDate": "2024-06-21",
+        "copyright": "\u00a9 2024 Gracie Abrams, under exclusive license to Interscope Records",
+        "type": "ALBUM",
+        "version": "Deluxe",
+        "url": "http://www.tidal.com/album/394021910",
+        "cover": "569148a7-c9cb-4ce3-9412-0d79e13f38e8",
+        "vibrantColor": "#84c5eb",
+        "videoCover": null,
+        "explicit": true,
+        "upc": "00602475429234",
+        "popularity": 0,
+        "audioQuality": "LOW",
+        "audioModes": [
+          "DOLBY_ATMOS"
+        ],
+        "mediaMetadata": {
+          "tags": [
+            "DOLBY_ATMOS"
+          ]
+        },
+        "upload": false,
+        "ai": false,
+        "artists": [
+          {
+            "id": 15686643,
+            "name": "Gracie Abrams",
+            "handle": null,
+            "type": "MAIN",
+            "picture": "5c131abe-b0c9-43f4-96b8-ca5a130420f6"
+          }
+        ]
+      },
+      {
+        "id": 472275408,
+        "title": "ace",
+        "duration": 1609,
+        "streamReady": true,
+        "payToStream": false,
+        "adSupportedStreamReady": true,
+        "djReady": true,
+        "stemReady": false,
+        "streamStartDate": "2025-11-14T00:00:00.000+0000",
+        "allowStreaming": true,
+        "premiumStreamingOnly": false,
+        "numberOfTracks": 9,
+        "numberOfVideos": 0,
+        "numberOfVolumes": 1,
+        "releaseDate": "2025-11-14",
+        "copyright": "\u00a9 2025 Big Loud Records/Back Blocks Music, under exclusive license to Mercury Records, a division of UMG Recordings, Inc.",
+        "type": "ALBUM",
+        "version": null,
+        "url": "http://www.tidal.com/album/472275408",
+        "cover": "7e933766-0a5f-45a3-81d7-c04ead6eb2f8",
+        "vibrantColor": "#b9655b",
+        "videoCover": null,
+        "explicit": true,
+        "upc": "00602488276894",
+        "popularity": 0,
+        "audioQuality": "LOSSLESS",
+        "audioModes": [
+          "STEREO"
+        ],
+        "mediaMetadata": {
+          "tags": [
+            "LOSSLESS",
+            "HIRES_LOSSLESS"
+          ]
+        },
+        "upload": false,
+        "ai": false,
+        "artists": [
+          {
+            "id": 11323393,
+            "name": "Ashley Cooke",
+            "handle": null,
+            "type": "MAIN",
+            "picture": "3dcacec1-393b-4279-8f09-e1fbb21d01fb"
+          }
+        ]
+      }
+    ]
+  },
+  "playlists": {
+    "limit": 10,
+    "offset": 0,
+    "totalNumberOfItems": 1,
+    "items": [
+      {
+        "uuid": "839fd95a-3149-4fb1-9bc2-ebfde0a77eb5",
+        "title": "Olivia Rodrigo Essentials",
+        "numberOfTracks": 20,
+        "numberOfVideos": 0,
+        "creator": {},
+        "description": "In 2021, \u201cDriver\u2019s License\u201d catapulted Olivia Rodrigo to the top of the Billboard Hot 100 and her subsequent debut album, SOUR, established Olivia as a bonafide pop star of the new generation. \n\nTaking vocal lessons and learning piano at a young age, Olivia would go on to pick up the guitar around age 12 and start honing her songwriting abilities, which are now known for her raw and honest lyrics. Her punk pop sensibilities are tempered with throwback 90\u2019s vibes and emotional ballads. Get to know Olivia's Essentials on TIDAL.\n\n(Photo: Geffen Records)",
+        "duration": 4100,
+        "lastUpdated": "2026-06-25T00:00:00.000+0000",
+        "created": "2023-09-06T00:00:00.000+0000",
+        "type": "EDITORIAL",
+        "publicPlaylist": true,
+        "url": "http://www.tidal.com/playlist/839fd95a-3149-4fb1-9bc2-ebfde0a77eb5",
+        "image": "c0f210e6-b7d5-47b9-ae7f-d103c7edddf8",
+        "popularity": 0,
+        "squareImage": "e567ddde-524d-4507-ae4f-dd6cb5afb5f1",
+        "customImageUrl": null,
+        "promotedArtists": [],
+        "lastItemAddedAt": null
+      }
+    ]
+  },
+  "tracks": {
+    "limit": 10,
+    "offset": 0,
+    "totalNumberOfItems": 111,
+    "items": [
+      {
+        "id": 522700393,
+        "title": "you seem pretty sad for a girl so in love",
+        "duration": 160,
+        "replayGain": -4.81,
+        "peak": 0.638062,
+        "allowStreaming": true,
+        "streamReady": true,
+        "payToStream": false,
+        "adSupportedStreamReady": true,
+        "djReady": true,
+        "stemReady": false,
+        "streamStartDate": "2026-05-08T00:00:00.000+0000",
+        "premiumStreamingOnly": false,
+        "trackNumber": 1,
+        "volumeNumber": 1,
+        "version": null,
+        "popularity": 18,
+        "copyright": "Lobo",
+        "bpm": null,
+        "key": null,
+        "keyScale": null,
+        "url": "http://www.tidal.com/track/522700393",
+        "isrc": "SE6QE2626387",
+        "editable": false,
+        "explicit": false,
+        "audioQuality": "LOSSLESS",
+        "audioModes": [
+          "STEREO"
+        ],
+        "mediaMetadata": {
+          "tags": [
+            "LOSSLESS"
+          ]
+        },
+        "upload": false,
+        "accessType": null,
+        "spotlighted": false,
+        "ai": false,
+        "artists": [
+          {
+            "id": 28944361,
+            "name": "Lobo",
+            "handle": null,
+            "type": "MAIN",
+            "picture": null
+          }
+        ],
+        "album": {
+          "id": 522700390,
+          "title": "you seem pretty sad for a girl so in love",
+          "cover": "07cbec61-7ad5-421a-99a4-fba745c2b136",
+          "vibrantColor": null,
+          "videoCover": null,
+          "releaseDate": "2026-05-08"
+        },
+        "mixes": {}
+      },
+      {
+        "id": 518343233,
+        "title": "drop dead (From: \"you seem pretty sad for a girl so in love\")",
+        "duration": 226,
+        "replayGain": -8.77,
+        "peak": 0.973022,
+        "allowStreaming": true,
+        "streamReady": true,
+        "payToStream": false,
+        "adSupportedStreamReady": true,
+        "djReady": true,
+        "stemReady": false,
+        "streamStartDate": "2026-04-22T00:00:00.000+0000",
+        "premiumStreamingOnly": false,
+        "trackNumber": 1,
+        "volumeNumber": 1,
+        "version": "Cover Espa\u00f1ol",
+        "popularity": 14,
+        "copyright": "Tami Rosales",
+        "bpm": 130,
+        "key": "Ab",
+        "keyScale": "MAJOR",
+        "url": "http://www.tidal.com/track/518343233",
+        "isrc": "QZPJ32547935",
+        "editable": false,
+        "explicit": false,
+        "audioQuality": "LOSSLESS",
+        "audioModes": [
+          "STEREO"
+        ],
+        "mediaMetadata": {
+          "tags": [
+            "LOSSLESS"
+          ]
+        },
+        "upload": false,
+        "accessType": null,
+        "spotlighted": false,
+        "ai": false,
+        "artists": [
+          {
+            "id": 27934501,
+            "name": "Tami Rosales",
+            "handle": null,
+            "type": "MAIN",
+            "picture": null
+          }
+        ],
+        "album": {
+          "id": 518343232,
+          "title": "drop dead (From: \"you seem pretty sad for a girl so in love\") (Cover Espa\u00f1ol)",
+          "cover": "d58cdfb7-f5db-40ca-a8ef-e3d90166a082",
+          "vibrantColor": null,
+          "videoCover": null,
+          "releaseDate": "2026-04-22"
+        },
+        "mixes": {}
+      },
+      {
+        "id": 533897595,
+        "title": "You Seem Pretty Sad for a Girl So in Love",
+        "duration": 52,
+        "replayGain": -8.58,
+        "peak": 0.914673,
+        "allowStreaming": true,
+        "streamReady": true,
+        "payToStream": false,
+        "adSupportedStreamReady": true,
+        "djReady": true,
+        "stemReady": false,
+        "streamStartDate": "2026-06-19T04:00:00.000+0000",
+        "premiumStreamingOnly": false,
+        "trackNumber": 1,
+        "volumeNumber": 1,
+        "version": null,
+        "popularity": 11,
+        "copyright": "Olivia Rodrigo",
+        "bpm": null,
+        "key": null,
+        "keyScale": null,
+        "url": "http://www.tidal.com/track/533897595",
+        "isrc": "GX5MX2645816",
+        "editable": false,
+        "explicit": false,
+        "audioQuality": "LOSSLESS",
+        "audioModes": [
+          "STEREO"
+        ],
+        "mediaMetadata": {
+          "tags": [
+            "LOSSLESS"
+          ]
+        },
+        "upload": false,
+        "accessType": null,
+        "spotlighted": false,
+        "ai": false,
+        "artists": [
+          {
+            "id": 28367153,
+            "name": "DeosMeo",
+            "handle": null,
+            "type": "MAIN",
+            "picture": null
+          }
+        ],
+        "album": {
+          "id": 533897594,
+          "title": "You Seem Pretty Sad for a Girl So in Love",
+          "cover": "e635067f-f0d8-4335-8f76-be0b265c97f5",
+          "vibrantColor": null,
+          "videoCover": null,
+          "releaseDate": "2026-06-19"
+        },
+        "mixes": {}
+      },
+      {
+        "id": 534003186,
+        "title": "the cure (From: \"you seem pretty sad for a girl so in love\")",
+        "duration": 297,
+        "replayGain": -8.25,
+        "peak": 0.999939,
+        "allowStreaming": true,
+        "streamReady": true,
+        "payToStream": false,
+        "adSupportedStreamReady": true,
+        "djReady": true,
+        "stemReady": false,
+        "streamStartDate": "2026-06-16T00:00:00.000+0000",
+        "premiumStreamingOnly": false,
+        "trackNumber": 1,
+        "volumeNumber": 1,
+        "version": "Cover Espa\u00f1ol",
+        "popularity": 11,
+        "copyright": "Tami Rosales",
+        "bpm": 144,
+        "key": "CSharp",
+        "keyScale": "MAJOR",
+        "url": "http://www.tidal.com/track/534003186",
+        "isrc": "QZPJ32557529",
+        "editable": false,
+        "explicit": true,
+        "audioQuality": "LOSSLESS",
+        "audioModes": [
+          "STEREO"
+        ],
+        "mediaMetadata": {
+          "tags": [
+            "LOSSLESS"
+          ]
+        },
+        "upload": false,
+        "accessType": null,
+        "spotlighted": false,
+        "ai": false,
+        "artists": [
+          {
+            "id": 27934501,
+            "name": "Tami Rosales",
+            "handle": null,
+            "type": "MAIN",
+            "picture": null
+          }
+        ],
+        "album": {
+          "id": 534003185,
+          "title": "the cure (From: \"you seem pretty sad for a girl so in love\") (Cover Espa\u00f1ol)",
+          "cover": "eaa0141b-f883-4dbd-b45b-54f61f508020",
+          "vibrantColor": null,
+          "videoCover": null,
+          "releaseDate": "2026-06-16"
+        },
+        "mixes": {}
+      },
+      {
+        "id": 513220183,
+        "title": "You Seem Pretty Sad for a Girl So in Love",
+        "duration": 196,
+        "replayGain": -0.88,
+        "peak": 0.614594,
+        "allowStreaming": true,
+        "streamReady": true,
+        "payToStream": false,
+        "adSupportedStreamReady": true,
+        "djReady": true,
+        "stemReady": false,
+        "streamStartDate": "2026-04-04T00:00:00.000+0000",
+        "premiumStreamingOnly": false,
+        "trackNumber": 1,
+        "volumeNumber": 1,
+        "version": null,
+        "popularity": 6,
+        "copyright": "9671502 Records DK",
+        "bpm": 128,
+        "key": "Eb",
+        "keyScale": "MAJOR",
+        "url": "http://www.tidal.com/track/513220183",
+        "isrc": "QZTB92616955",
+        "editable": false,
+        "explicit": false,
+        "audioQuality": "LOSSLESS",
+        "audioModes": [
+          "STEREO"
+        ],
+        "mediaMetadata": {
+          "tags": [
+            "LOSSLESS",
+            "HIRES_LOSSLESS"
+          ]
+        },
+        "upload": false,
+        "accessType": null,
+        "spotlighted": false,
+        "ai": false,
+        "artists": [
+          {
+            "id": 63477793,
+            "name": "theshyamofficial",
+            "handle": null,
+            "type": "MAIN",
+            "picture": null
+          }
+        ],
+        "album": {
+          "id": 513220182,
+          "title": "You Seem Pretty Sad for a Girl So in Love",
+          "cover": "fa4b8171-59dd-400e-9879-4d65740386c7",
+          "vibrantColor": null,
+          "videoCover": null,
+          "releaseDate": "2026-04-04"
+        },
+        "mixes": {}
+      },
+      {
+        "id": 532255034,
+        "title": "you seem pretty sad for a girl in love",
+        "duration": 198,
+        "replayGain": -4.55,
+        "peak": 0.871582,
+        "allowStreaming": true,
+        "streamReady": true,
+        "payToStream": false,
+        "adSupportedStreamReady": true,
+        "djReady": true,
+        "stemReady": false,
+        "streamStartDate": "2026-06-09T00:00:00.000+0000",
+        "premiumStreamingOnly": false,
+        "trackNumber": 1,
+        "volumeNumber": 1,
+        "version": null,
+        "popularity": 6,
+        "copyright": "Anchorlight",
+        "bpm": 130,
+        "key": "Bb",
+        "keyScale": "MAJOR",
+        "url": "http://www.tidal.com/track/532255034",
+        "isrc": "QT3FC2672073",
+        "editable": false,
+        "explicit": false,
+        "audioQuality": "LOSSLESS",
+        "audioModes": [
+          "STEREO"
+        ],
+        "mediaMetadata": {
+          "tags": [
+            "LOSSLESS",
+            "HIRES_LOSSLESS"
+          ]
+        },
+        "upload": false,
+        "accessType": null,
+        "spotlighted": false,
+        "ai": false,
+        "artists": [
+          {
+            "id": 75022242,
+            "name": "Kristina Cassandra",
+            "handle": "kristina_cassandra",
+            "type": "MAIN",
+            "picture": null
+          }
+        ],
+        "album": {
+          "id": 532255033,
+          "title": "you seem pretty sad for a girl in love",
+          "cover": "0ae1c2f7-0636-4d59-b78e-8c522823006e",
+          "vibrantColor": null,
+          "videoCover": null,
+          "releaseDate": "2026-06-09"
+        },
+        "mixes": {}
+      },
+      {
+        "id": 236990420,
+        "title": "because i liked a boy",
+        "duration": 196,
+        "replayGain": -9.57,
+        "peak": 1.0,
+        "allowStreaming": true,
+        "streamReady": true,
+        "payToStream": false,
+        "adSupportedStreamReady": true,
+        "djReady": true,
+        "stemReady": false,
+        "streamStartDate": "2022-07-15T00:00:00.000+0000",
+        "premiumStreamingOnly": false,
+        "trackNumber": 5,
+        "volumeNumber": 1,
+        "version": null,
+        "popularity": 0,
+        "copyright": "\u2117 2022 Island Records, a division of UMG Recordings, Inc.",
+        "bpm": 148,
+        "key": "E",
+        "keyScale": "MAJOR",
+        "url": "http://www.tidal.com/track/236990420",
+        "isrc": "USUM72210695",
+        "editable": false,
+        "explicit": true,
+        "audioQuality": "LOSSLESS",
+        "audioModes": [
+          "STEREO"
+        ],
+        "mediaMetadata": {
+          "tags": [
+            "LOSSLESS",
+            "HIRES_LOSSLESS"
+          ]
+        },
+        "upload": false,
+        "accessType": null,
+        "spotlighted": false,
+        "ai": false,
+        "artists": [
+          {
+            "id": 4751756,
+            "name": "Sabrina Carpenter",
+            "handle": null,
+            "type": "MAIN",
+            "picture": "854a8a1a-43f1-44b2-8e59-474e83abd578"
+          }
+        ],
+        "album": {
+          "id": 236990412,
+          "title": "emails i can't send",
+          "cover": "d5b334dc-05d2-46ad-87d1-489f7b4a58be",
+          "vibrantColor": "#92c4cc",
+          "videoCover": null,
+          "releaseDate": "2022-07-15"
+        },
+        "mixes": {
+          "TRACK_MIX": "001ae52e736359c5b8dea8f51fc210"
+        }
+      },
+      {
+        "id": 184786799,
+        "title": "good 4 u",
+        "duration": 178,
+        "replayGain": -10.39,
+        "peak": 0.988553,
+        "allowStreaming": true,
+        "streamReady": true,
+        "payToStream": false,
+        "adSupportedStreamReady": true,
+        "djReady": true,
+        "stemReady": false,
+        "streamStartDate": "2021-05-21T00:00:00.000+0000",
+        "premiumStreamingOnly": false,
+        "trackNumber": 6,
+        "volumeNumber": 1,
+        "version": null,
+        "popularity": 0,
+        "copyright": "\u2117 2021 Olivia Rodrigo, under exclusive license to Geffen Records",
+        "bpm": 166,
+        "key": "A",
+        "keyScale": "MAJOR",
+        "url": "http://www.tidal.com/track/184786799",
+        "isrc": "USUG12101245",
+        "editable": false,
+        "explicit": true,
+        "audioQuality": "LOSSLESS",
+        "audioModes": [
+          "STEREO"
+        ],
+        "mediaMetadata": {
+          "tags": [
+            "LOSSLESS",
+            "HIRES_LOSSLESS"
+          ]
+        },
+        "upload": false,
+        "accessType": null,
+        "spotlighted": false,
+        "ai": false,
+        "artists": [
+          {
+            "id": 8161298,
+            "name": "Olivia Rodrigo",
+            "handle": null,
+            "type": "MAIN",
+            "picture": "a43e258b-952a-4fea-954c-13675ad27b28"
+          }
+        ],
+        "album": {
+          "id": 184786791,
+          "title": "SOUR",
+          "cover": "04fbbd05-bfe4-4035-800e-273a48d5acda",
+          "vibrantColor": "#8d85c6",
+          "videoCover": null,
+          "releaseDate": "2021-05-21"
+        },
+        "mixes": {
+          "TRACK_MIX": "001f7226d644034904df202aed9e02"
+        }
+      },
+      {
+        "id": 529304835,
+        "title": "You Seem Pretty Sad for a Girl So in Love",
+        "duration": 268,
+        "replayGain": -2.02,
+        "peak": 1.0,
+        "allowStreaming": true,
+        "streamReady": true,
+        "payToStream": false,
+        "adSupportedStreamReady": true,
+        "djReady": true,
+        "stemReady": false,
+        "streamStartDate": "2026-05-30T00:00:00.000+0000",
+        "premiumStreamingOnly": false,
+        "trackNumber": 1,
+        "volumeNumber": 1,
+        "version": null,
+        "popularity": 0,
+        "copyright": "Shourya Mishra",
+        "bpm": 136,
+        "key": "Eb",
+        "keyScale": "MINOR",
+        "url": "http://www.tidal.com/track/529304835",
+        "isrc": "SE6SA2625307",
+        "editable": false,
+        "explicit": false,
+        "audioQuality": "LOSSLESS",
+        "audioModes": [
+          "STEREO"
+        ],
+        "mediaMetadata": {
+          "tags": [
+            "LOSSLESS"
+          ]
+        },
+        "upload": false,
+        "accessType": null,
+        "spotlighted": false,
+        "ai": false,
+        "artists": [
+          {
+            "id": 33302124,
+            "name": "Shourya Mishra",
+            "handle": null,
+            "type": "MAIN",
+            "picture": null
+          }
+        ],
+        "album": {
+          "id": 529304832,
+          "title": "You Seem Pretty Sad for a Girl So in Love",
+          "cover": "0bd812f5-eefe-46da-9f35-4de34d5aaa50",
+          "vibrantColor": null,
+          "videoCover": null,
+          "releaseDate": "2026-05-30"
+        },
+        "mixes": {}
+      },
+      {
+        "id": 521839366,
+        "title": "you seem pretty sad for a girl so in love",
+        "duration": 215,
+        "replayGain": -4.47,
+        "peak": 0.982208,
+        "allowStreaming": true,
+        "streamReady": true,
+        "payToStream": false,
+        "adSupportedStreamReady": true,
+        "djReady": true,
+        "stemReady": false,
+        "streamStartDate": "2026-04-22T00:00:00.000+0000",
+        "premiumStreamingOnly": false,
+        "trackNumber": 5,
+        "volumeNumber": 1,
+        "version": null,
+        "popularity": 0,
+        "copyright": "LNK BLONDINES",
+        "bpm": null,
+        "key": null,
+        "keyScale": null,
+        "url": "http://www.tidal.com/track/521839366",
+        "isrc": "SE6I32658026",
+        "editable": false,
+        "explicit": true,
+        "audioQuality": "LOSSLESS",
+        "audioModes": [
+          "STEREO"
+        ],
+        "mediaMetadata": {
+          "tags": [
+            "LOSSLESS"
+          ]
+        },
+        "upload": false,
+        "accessType": null,
+        "spotlighted": false,
+        "ai": false,
+        "artists": [
+          {
+            "id": 49069604,
+            "name": "Adolphina",
+            "handle": null,
+            "type": "MAIN",
+            "picture": null
+          }
+        ],
+        "album": {
+          "id": 521839361,
+          "title": "Always be ur teenage dream .",
+          "cover": "6bbbda87-a13d-4fe8-996a-a7f5ea06367a",
+          "vibrantColor": null,
+          "videoCover": null,
+          "releaseDate": "2026-04-22"
+        },
+        "mixes": {}
+      }
+    ]
+  },
+  "videos": {
+    "limit": 10,
+    "offset": 0,
+    "totalNumberOfItems": 0,
+    "items": []
+  },
+  "topHit": {
+    "value": {
+      "id": 533158651,
+      "title": "you seem pretty sad for a girl so in love",
+      "duration": 3064,
+      "streamReady": true,
+      "payToStream": false,
+      "adSupportedStreamReady": true,
+      "djReady": true,
+      "stemReady": false,
+      "streamStartDate": "2026-06-12T00:00:00.000+0000",
+      "allowStreaming": true,
+      "premiumStreamingOnly": false,
+      "numberOfTracks": 13,
+      "numberOfVideos": 0,
+      "numberOfVolumes": 1,
+      "releaseDate": "2026-06-12",
+      "copyright": "\u00a9 2026 Olivia Rodrigo, under exclusive license to Geffen Records",
+      "type": "ALBUM",
+      "version": null,
+      "url": "http://www.tidal.com/album/533158651",
+      "cover": "61ebc648-dbf7-403d-9c95-72c96202a14a",
+      "vibrantColor": "#f5ab96",
+      "videoCover": null,
+      "explicit": true,
+      "upc": "00881061110422",
+      "popularity": 65,
+      "audioQuality": "LOW",
+      "audioModes": [
+        "DOLBY_ATMOS"
+      ],
+      "mediaMetadata": {
+        "tags": [
+          "DOLBY_ATMOS"
+        ]
+      },
+      "upload": false,
+      "ai": false,
+      "artists": [
+        {
+          "id": 8161298,
+          "name": "Olivia Rodrigo",
+          "handle": null,
+          "type": "MAIN",
+          "picture": "d16ff03a-7c1b-4d54-994f-ad0cd415cd91"
+        }
+      ]
+    },
+    "type": "ALBUMS"
+  }
+}
