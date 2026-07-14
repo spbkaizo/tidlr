@@ -1,7 +1,9 @@
-# Build output
+# Build output (the compiled binary at the repo root, and release artifacts).
+# NOTE: keep these anchored/specific so they do not match the cmd/tidlr source
+# package directory.
 /tidlr
-tidlr
-*.exe
+/dist/
+/tidlr-*
 
 # Local configuration (may contain machine-specific paths; not for the repo)
 /config.toml
