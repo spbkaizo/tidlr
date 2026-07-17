@@ -13,6 +13,8 @@ import (
 	"strings"
 	"sync"
 	"time"
+
+	"github.com/simonb/tidlr/internal/fsname"
 )
 
 // trackQualities maps the CLI quality names to Tidal API quality levels, the
@@ -511,18 +513,7 @@ func trackFilename(tr Track) string {
 }
 
 // sanitize makes a string safe as a path component.
-func sanitize(s string) string {
-	s = strings.TrimSpace(s)
-	r := strings.NewReplacer(
-		"/", "-", "\\", "-", ":", "-", "*", "", "?", "",
-		"\"", "", "<", "", ">", "", "|", "-",
-	)
-	s = r.Replace(s)
-	if s == "" {
-		return "Unknown"
-	}
-	return s
-}
+func sanitize(s string) string { return fsname.Sanitize(s) }
 
 func tailLines(s string) string {
 	lines := strings.Split(strings.TrimSpace(s), "\n")

@@ -13,6 +13,7 @@ import (
 	"strings"
 
 	"github.com/simonb/tidlr/internal/adm"
+	"github.com/simonb/tidlr/internal/fsname"
 )
 
 // Converter turns a downloaded FLAC album into ALAC in the output library.
@@ -180,18 +181,7 @@ func fileExists(path string) bool {
 
 // sanitize strips path separators and characters that are awkward in filenames
 // so artist/album names form safe directory names.
-func sanitize(s string) string {
-	s = strings.TrimSpace(s)
-	repl := strings.NewReplacer(
-		"/", "-", "\\", "-", ":", "-", "*", "", "?", "",
-		"\"", "", "<", "", ">", "", "|", "-",
-	)
-	s = repl.Replace(s)
-	if s == "" {
-		return "Unknown"
-	}
-	return s
-}
+func sanitize(s string) string { return fsname.Sanitize(s) }
 
 // tail returns the last few lines of ffmpeg stderr for concise error messages.
 func tail(s string) string {
