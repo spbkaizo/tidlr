@@ -2,6 +2,7 @@ package tidal
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"io"
 	"log"
@@ -423,10 +424,22 @@ func (d *Downloader) fetchSegments(ctx context.Context, urls []string, path stri
 			return nil
 		}
 		lastErr = err
+
+		// A rate-limited CDN needs a real pause, not the short linear backoff
+		// that suits a dropped connection.
+		wait := time.Duration(attempt) * time.Second
+		var rl rateLimitedError
+		if errors.As(err, &rl) {
+			wait = rateLimitWait(rl.RetryAfter)
+			if d.Log != nil {
+				d.Log.Printf("rate limited fetching segments, waiting %s before retry %d/%d",
+					wait.Round(time.Second), attempt+1, attempts)
+			}
+		}
 		select {
 		case <-ctx.Done():
 			return ctx.Err()
-		case <-time.After(time.Duration(attempt) * time.Second):
+		case <-time.After(wait):
 		}
 	}
 	return lastErr
@@ -457,6 +470,11 @@ func (d *Downloader) fetchSegmentsOnce(ctx context.Context, urls []string, path 
 		resp, err := d.fetchClient().Do(req)
 		if err != nil {
 			return err
+		}
+		if resp.StatusCode == http.StatusTooManyRequests {
+			retryAfter := parseRetryAfter(resp.Header.Get("Retry-After"))
+			resp.Body.Close()
+			return rateLimitedError{Path: "segment", RetryAfter: retryAfter}
 		}
 		if resp.StatusCode != http.StatusOK {
 			resp.Body.Close()

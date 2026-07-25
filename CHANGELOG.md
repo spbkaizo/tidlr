@@ -3,6 +3,31 @@
 All notable changes to `tidlr` are documented here. This project adheres to
 [Semantic Versioning](https://semver.org).
 
+## [1.1.0] — 2026-07-25
+
+### Added
+
+- **Rate-limit backoff.** Tidal throttles bursty API traffic with HTTP 429,
+  which previously aborted the whole album mid-download (most often on
+  `playbackinfopostpaywall` when several albums downloaded concurrently).
+  Requests now retry up to 5 times, waiting a random 1–180s between attempts.
+  The wait is randomised across the full window rather than escalating, so
+  concurrent workers throttled at the same moment don't retry in lockstep and
+  immediately re-trip the limit.
+- A server-sent `Retry-After` header (delta-seconds or HTTP date) takes
+  precedence over the random wait, clamped to 180s so an outsized value can't
+  stall a run.
+- Rate-limit waits are logged, so a multi-minute pause isn't mistaken for a
+  hang, and remain cancellable — Ctrl-C returns promptly instead of blocking
+  for the full backoff.
+
+### Fixed
+
+- Segment and cover downloads, which bypass the API client, now use the same
+  backoff on a 429. Their existing retry waited only 1–4s — far too short to
+  clear a rate limit — while keeping that short linear backoff for dropped
+  connections.
+
 ## [1.0.0] — 2026-07-13
 
 **Complete rewrite.** v1.0.0 is a ground-up reimplementation of `tidlr`. Nothing
@@ -73,6 +98,7 @@ here for continuity. See the [`legacy-0.9`] branch for that code.
 
 - Early releases of the original Golang Tidal FLAC/MQA downloader.
 
+[1.1.0]: https://github.com/spbkaizo/tidlr/releases/tag/v1.1.0
 [1.0.0]: https://github.com/spbkaizo/tidlr/releases/tag/v1.0.0
 [0.9.4]: https://github.com/spbkaizo/tidlr/tree/legacy-0.9
 [0.9.3]: https://github.com/spbkaizo/tidlr/releases/tag/v0.9.3
