@@ -47,6 +47,7 @@ func main() {
 	since := flag.String("since", "", "scrape all albums added on/after this date (DDMMYY or DD/MM/YYYY)")
 	playlist := flag.String("playlist", "", "download a Tidal playlist by URL or UUID into <output>/playlist/<name>")
 	album := flag.String("album", "", "download a Tidal album by URL or ID into <output>/<artist>/<album>")
+	track := flag.String("track", "", "download individual Tidal tracks by URL or ID into <output>/tracks")
 	showVersion := flag.Bool("version", false, "print version and exit")
 	flag.Usage = usage
 	flag.Parse()
@@ -56,18 +57,21 @@ func main() {
 		return
 	}
 
-	// --playlist and --album are standalone operations: download and exit.
-	if *playlist != "" || *album != "" {
+	// --playlist, --album and --track are standalone operations: download and exit.
+	if *playlist != "" || *album != "" || *track != "" {
 		cfg, err := config.Load(*cfgPath)
 		if err != nil {
 			log.Fatalf("config: %v", err)
 		}
 		ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 		defer stop()
-		if *playlist != "" {
+		switch {
+		case *playlist != "":
 			mustPlaylist(ctx, cfg, *playlist)
-		} else {
+		case *album != "":
 			mustAlbum(ctx, cfg, *album)
+		default:
+			mustTrack(ctx, cfg, *track)
 		}
 		return
 	}
@@ -323,6 +327,55 @@ func downloadOneAlbum(ctx context.Context, cfg config.Config, dl *tidal.Download
 	return nil
 }
 
+// mustTrack downloads one or more individual Tidal tracks (space/comma-separated
+// URLs or ids) and converts them to ALAC under <output_dir>/tracks/. Standalone
+// tracks have no album directory to live in, so they are filed together and
+// named "<Artist> - <Title>".
+func mustTrack(ctx context.Context, cfg config.Config, arg string) {
+	ids := parseTrackIDs(arg)
+	if len(ids) == 0 {
+		log.Fatalf("could not find any track id in %q", arg)
+	}
+
+	client := authedClient(ctx, cfg)
+	dl := &tidal.Downloader{Client: client, FFmpegBin: cfg.FFmpegBin, Threads: cfg.DownloadThreads, Log: log.Default()}
+
+	scratch := filepath.Join(cfg.DownloadDir(), "track")
+	if err := os.MkdirAll(scratch, 0o755); err != nil {
+		log.Fatalf("scratch dir: %v", err)
+	}
+	log.Printf("downloading %d track(s) ...", len(ids))
+	res, err := dl.DownloadTracks(ctx, ids, cfg.Quality, scratch)
+	if err != nil {
+		log.Fatalf("track download: %v", err)
+	}
+
+	conv := &convert.Converter{FFmpegBin: cfg.FFmpegBin, OutputDir: cfg.OutputDir, KeepFLAC: cfg.KeepFLAC}
+	out, err := conv.ConvertFlat(ctx, "tracks", res.Dir, res.Lossless)
+	if err != nil {
+		log.Fatalf("track convert: %v", err)
+	}
+	os.RemoveAll(res.Dir)
+	log.Printf("done: %d/%d track(s) -> %s", res.Tracks, len(ids), out)
+}
+
+// trackIDRe matches a Tidal track id in a URL (…/track/<id>…) or a bare number.
+var trackIDRe = regexp.MustCompile(`(?:track/)?(\d+)`)
+
+// parseTrackIDs extracts all track ids from a string of space/comma-separated
+// URLs or bare ids.
+func parseTrackIDs(arg string) []int64 {
+	var ids []int64
+	for _, field := range strings.FieldsFunc(arg, func(r rune) bool { return r == ' ' || r == ',' || r == '\n' || r == '\t' }) {
+		if m := trackIDRe.FindStringSubmatch(field); m != nil {
+			if id, err := strconv.ParseInt(m[1], 10, 64); err == nil {
+				ids = append(ids, id)
+			}
+		}
+	}
+	return ids
+}
+
 // parseAlbumIDs extracts all album ids from a string of space/comma-separated
 // URLs or bare ids.
 func parseAlbumIDs(arg string) []int64 {
@@ -395,6 +448,8 @@ Flags:
                   <output_dir>/playlist/<name>/. Standalone; ignores other args.
   -album URL      Download a Tidal album (URL or ID) as ALAC into
                   <output_dir>/<artist>/<album>/. Standalone; ignores other args.
+  -track URL      Download individual Tidal tracks (URLs or IDs, space/comma-
+                  separated) as ALAC into <output_dir>/tracks/. Standalone.
 
 Examples:
   tidlr sync                 # grab the latest "Just in" albums
@@ -402,5 +457,6 @@ Examples:
   tidlr --force --since 010226 sync  # re-download that range from scratch
   tidlr --playlist https://tidal.com/playlist/f98d7491-...  # download a playlist
   tidlr --album https://tidal.com/album/540168117  # download a single album
+  tidlr --track https://tidal.com/track/113302335  # download a single track
 `)
 }

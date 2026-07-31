@@ -2,7 +2,8 @@
 
 A fast, native-Go pipeline for building a lossless music library from Tidal.
 
-`tidlr` downloads albums and playlists from Tidal as **lossless FLAC**, converts
+`tidlr` downloads albums, playlists and individual tracks from Tidal as
+**lossless FLAC**, converts
 them to **ALAC** (`.m4a`) with embedded cover art and tags, and files them under
 a tidy `<Artist>/<Album>/` tree. It can also keep up with new releases
 automatically by scraping [AnyDecentMusic](http://www.anydecentmusic.com)'s
@@ -70,7 +71,10 @@ tidlr --album https://tidal.com/album/540168117
 # 3. Download a playlist
 tidlr --playlist https://tidal.com/playlist/f98d7491-56e3-4b96-b536-60c1d2e5759e
 
-# 4. Or catch up on new releases from AnyDecentMusic
+# 4. Download individual tracks
+tidlr --track https://tidal.com/track/113302335
+
+# 5. Or catch up on new releases from AnyDecentMusic
 tidlr sync
 ```
 
@@ -86,6 +90,7 @@ Files land in `~/Music/tidlr/` by default. See the
 | `tidlr login`                 | Authenticate with Tidal (device-code flow). Needed once.            |
 | `tidlr --album <url\|id ...>` | Download one or more albums into `<out>/<Artist>/<Album>/`.          |
 | `tidlr --playlist <url\|uuid>`| Download a playlist into `<out>/playlist/<name>/`.                   |
+| `tidlr --track <url\|id ...>` | Download one or more individual tracks into `<out>/tracks/`.        |
 | `tidlr sync`                  | Scrape new AnyDecentMusic releases, then download them.             |
 | `tidlr scrape`                | Just enqueue new releases (with `--since` to reach further back).   |
 | `tidlr run`                   | Download everything currently queued.                               |

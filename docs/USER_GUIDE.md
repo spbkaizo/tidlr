@@ -11,11 +11,12 @@ a music library up to date. For a high-level overview, see the
 3. [Downloading a single album](#3-downloading-a-single-album)
 4. [Downloading multiple albums at once](#4-downloading-multiple-albums-at-once)
 5. [Downloading a playlist](#5-downloading-a-playlist)
-6. [Keeping up with new releases (AnyDecentMusic)](#6-keeping-up-with-new-releases-anydecentmusic)
-7. [The queue and the library](#7-the-queue-and-the-library)
-8. [Configuration reference](#8-configuration-reference)
-9. [Audio quality & formats](#9-audio-quality--formats)
-10. [Troubleshooting](#10-troubleshooting)
+6. [Downloading individual tracks](#6-downloading-individual-tracks)
+7. [Keeping up with new releases (AnyDecentMusic)](#7-keeping-up-with-new-releases-anydecentmusic)
+8. [The queue and the library](#8-the-queue-and-the-library)
+9. [Configuration reference](#9-configuration-reference)
+10. [Audio quality & formats](#10-audio-quality--formats)
+11. [Troubleshooting](#11-troubleshooting)
 
 ---
 
@@ -129,7 +130,34 @@ skipped and logged, and the rest are delivered.
 
 ---
 
-## 6. Keeping up with new releases (AnyDecentMusic)
+## 6. Downloading individual tracks
+
+Pass one or more track URLs or IDs:
+
+```sh
+tidlr --track https://tidal.com/track/113302335
+tidlr --track https://tidal.com/track/113302335/u   # trailing /u is fine
+tidlr --track 113302335                              # bare ID works too
+tidlr --track "113302335 545220119"                  # several at once
+```
+
+Tracks download to:
+
+```
+~/Music/tidlr/tracks/<Artist> - <Track>.m4a
+```
+
+A standalone track has no album to live in, so tracks are filed together in
+`tracks/` rather than under `<Artist>/<Album>/` — that keeps single tracks from
+creating album folders that look complete but aren't. Each track keeps **its
+own** album's cover art and album tag, as with playlists.
+
+Like albums and playlists, one unavailable track is skipped and logged rather
+than failing the whole batch.
+
+---
+
+## 7. Keeping up with new releases (AnyDecentMusic)
 
 `tidlr` can build and maintain a library from
 [AnyDecentMusic](http://www.anydecentmusic.com)'s "Recent Releases" chart.
@@ -176,7 +204,7 @@ tidlr --force --since 010226 sync
 
 ---
 
-## 7. The queue and the library
+## 8. The queue and the library
 
 `tidlr` keeps two things in `~/.local/share/tidlr/`:
 
@@ -205,7 +233,7 @@ The scratch download area (partial FLACs before conversion) also lives under
 
 ---
 
-## 8. Configuration reference
+## 9. Configuration reference
 
 `tidlr` works with no config file. To customise, copy the example and edit it:
 
@@ -232,7 +260,7 @@ it with `--config <path>`.
 
 ---
 
-## 9. Audio quality & formats
+## 10. Audio quality & formats
 
 Set `quality` (or leave it at `max`):
 
@@ -256,7 +284,7 @@ Whatever the source, output is delivered as follows:
 
 ---
 
-## 10. Troubleshooting
+## 11. Troubleshooting
 
 **`tidlr: command not found`**
 Add Go's bin to your `PATH` (see [Installation](#1-installation)).

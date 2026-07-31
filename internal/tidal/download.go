@@ -252,6 +252,103 @@ func (d *Downloader) DownloadPlaylist(ctx context.Context, uuid, quality, destDi
 	return DownloadResult{Dir: plDir, Lossless: allLossless, Tracks: delivered}, nil
 }
 
+// DownloadTracks fetches individual tracks by id into destDir. Each track keeps
+// its own album metadata and cover art (like a playlist, not an album), and is
+// named "<Artist> - <Title>" since a standalone track has no meaningful
+// position. One bad track is logged and skipped rather than failing the batch.
+func (d *Downloader) DownloadTracks(ctx context.Context, trackIDs []int64, quality, destDir string) (DownloadResult, error) {
+	apiQuality := APIQuality(quality)
+
+	if err := os.MkdirAll(destDir, 0o755); err != nil {
+		return DownloadResult{}, err
+	}
+	coverDir := filepath.Join(destDir, ".covers")
+	os.MkdirAll(coverDir, 0o755)
+	defer os.RemoveAll(coverDir)
+
+	threads := d.Threads
+	if threads <= 0 {
+		threads = 4
+	}
+
+	var (
+		mu          sync.Mutex
+		delivered   int
+		skipped     int
+		allLossless = true
+	)
+	sem := make(chan struct{}, threads)
+	var wg sync.WaitGroup
+
+	for _, id := range trackIDs {
+		if ctx.Err() != nil {
+			break
+		}
+		wg.Add(1)
+		sem <- struct{}{}
+		go func(id int64) {
+			defer wg.Done()
+			defer func() { <-sem }()
+
+			tr, err := d.Client.GetTrack(ctx, id)
+			if err != nil {
+				mu.Lock()
+				skipped++
+				mu.Unlock()
+				if d.Log != nil {
+					d.Log.Printf("track %d: %v", id, err)
+				}
+				return
+			}
+
+			meta := d.trackMetaFor(ctx, tr, coverDir)
+			lossless, err := d.downloadTrack(ctx, tr, meta, apiQuality, destDir)
+			mu.Lock()
+			defer mu.Unlock()
+			if err != nil {
+				skipped++
+				if d.Log != nil {
+					d.Log.Printf("track %d (%q): %v", id, tr.Title, err)
+				}
+				return
+			}
+			delivered++
+			if !lossless {
+				allLossless = false
+			}
+			if d.Log != nil {
+				d.Log.Printf("downloaded %q — %q", tr.ArtistName(), tr.Title)
+			}
+		}(id)
+	}
+	wg.Wait()
+
+	if delivered == 0 {
+		return DownloadResult{}, fmt.Errorf("no tracks delivered (%d skipped)", skipped)
+	}
+	return DownloadResult{Dir: destDir, Lossless: allLossless, Tracks: delivered}, nil
+}
+
+// trackMetaFor builds tag metadata for a standalone track from its own album,
+// fetching the cover into coverDir (best effort) for per-track embedding.
+func (d *Downloader) trackMetaFor(ctx context.Context, tr Track, coverDir string) trackMeta {
+	meta := trackMeta{
+		Title:       tr.Title,
+		Artist:      tr.ArtistName(),
+		Album:       tr.Album.Title,
+		TrackNumber: tr.TrackNumber,
+		Date:        tr.Album.ReleaseDate,
+		FileBase:    sanitize(tr.ArtistName() + " - " + tr.Title),
+	}
+	if tr.Album.Cover != "" {
+		coverPath := filepath.Join(coverDir, strconv.FormatInt(tr.ID, 10)+".jpg")
+		if err := d.fetchCover(ctx, tr.Album.Cover, coverPath); err == nil {
+			meta.CoverPath = coverPath
+		}
+	}
+	return meta
+}
+
 // playlistTracks pages through a playlist's track listing.
 func (d *Downloader) playlistTracks(ctx context.Context, uuid string) ([]Track, error) {
 	var out []Track

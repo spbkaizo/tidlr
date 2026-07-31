@@ -3,6 +3,24 @@
 All notable changes to `tidlr` are documented here. This project adheres to
 [Semantic Versioning](https://semver.org).
 
+## [1.2.0] — 2026-07-31
+
+### Added
+
+- **`--track <url|id ...>`** — download individual tracks, the one thing
+  `--album` and `--playlist` could not do. Accepts multiple space/comma-
+  separated Tidal track URLs or bare ids (including the `/u` share-link
+  suffix), and delivers ALAC into `<output_dir>/tracks/`.
+- `Client.GetTrack` fetches a single track's metadata. Each track carries its
+  own album, artist and cover, so standalone tracks are tagged and given
+  embedded art individually — the playlist model rather than the album one.
+- Tracks are named `<Artist> - <Title>`. A loose track has no album directory
+  to sensibly live in, and filing it under `<Artist>/<Album>/` would leave
+  album folders that look complete but aren't.
+- One failed track is logged and skipped rather than aborting the batch,
+  matching the existing `--album` behaviour.
+- Unit tests for track and album URL/id parsing (`cmd/tidlr` had none).
+
 ## [1.1.0] — 2026-07-25
 
 ### Added
@@ -98,6 +116,7 @@ here for continuity. See the [`legacy-0.9`] branch for that code.
 
 - Early releases of the original Golang Tidal FLAC/MQA downloader.
 
+[1.2.0]: https://github.com/spbkaizo/tidlr/releases/tag/v1.2.0
 [1.1.0]: https://github.com/spbkaizo/tidlr/releases/tag/v1.1.0
 [1.0.0]: https://github.com/spbkaizo/tidlr/releases/tag/v1.0.0
 [0.9.4]: https://github.com/spbkaizo/tidlr/tree/legacy-0.9

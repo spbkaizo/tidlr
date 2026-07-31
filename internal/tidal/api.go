@@ -54,6 +54,16 @@ func (c *Client) GetAlbumItems(ctx context.Context, albumID int64, limit, offset
 	return res, err
 }
 
+// GetTrack fetches a single track's metadata by id. The response carries the
+// track's own album, so a standalone track has everything needed for tagging.
+func (c *Client) GetTrack(ctx context.Context, trackID int64) (Track, error) {
+	var t Track
+	err := c.get(ctx, "tracks/"+strconv.FormatInt(trackID, 10), map[string]string{
+		"countryCode": c.countryCode(),
+	}, &t)
+	return t, err
+}
+
 // GetTrackStream fetches playback info (the manifest) for a track at the given
 // quality (LOW, HIGH, LOSSLESS, HI_RES_LOSSLESS).
 //
