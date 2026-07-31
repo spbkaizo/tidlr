@@ -410,9 +410,11 @@ func mustStatus(q *queue.Queue) {
 	if err != nil {
 		log.Fatalf("status: %v", err)
 	}
+	// Every state must be listed: total is the sum of these, so an omitted
+	// state would silently vanish from the count.
 	order := []queue.State{
 		queue.StatePending, queue.StateDownloading, queue.StateConverting,
-		queue.StateDone, queue.StateFailed,
+		queue.StateDone, queue.StateFailed, queue.StateSkipped,
 	}
 	fmt.Println("queue:")
 	total := 0

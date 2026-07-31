@@ -209,7 +209,8 @@ tidlr --force --since 010226 sync
 `tidlr` keeps two things in `~/.local/share/tidlr/`:
 
 - **A work queue** (`queue.db`) — the current batch of albums moving through the
-  pipeline: `pending → downloading → converting → done` (or `failed`).
+  pipeline: `pending → downloading → converting → done` (or `failed`, or
+  `skipped`).
 - **A permanent library record** — every album successfully downloaded. This is
   what lets a scrape skip things you already have, independently of the queue.
 
@@ -222,8 +223,17 @@ queue:
   converting   1
   done         36
   failed       1
-  total        41
+  skipped      1
+  total        42
 ```
+
+`failed` and `skipped` mean different things:
+
+- **`failed`** — something went wrong that a retry might fix (a network drop,
+  a rate limit, an interrupted download). `tidlr retry` requeues these.
+- **`skipped`** — no Tidal album matches the ADM title, usually because ADM's
+  title is garbled beyond recognition. A retry cannot help, so `tidlr retry`
+  deliberately leaves these alone rather than re-attempting them forever.
 
 You can **interrupt any run** (Ctrl-C) and simply run again — items left
 mid-flight are recovered automatically, and `tidlr retry` picks up failures.

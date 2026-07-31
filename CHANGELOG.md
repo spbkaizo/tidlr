@@ -3,6 +3,25 @@
 All notable changes to `tidlr` are documented here. This project adheres to
 [Semantic Versioning](https://semver.org).
 
+## [1.3.0] — 2026-07-31
+
+### Added
+
+- **`skipped` queue state** for permanent, non-retryable outcomes. When no
+  Tidal album matches an ADM title (typically because ADM's title is garbled),
+  the item is now marked `skipped` rather than `failed`.
+
+### Fixed
+
+- `tidlr retry` no longer churns on unmatchable albums. The pipeline already
+  recognised the no-match case and logged "retry won't help", but still
+  recorded it as `failed` — so every `retry` requeued it, re-ran the download,
+  and failed again. `RequeueFailed` targets `failed` only, so `skipped` items
+  are now left alone permanently.
+- `tidlr status` lists the new state. The displayed total is the sum of the
+  listed states, so omitting it would have silently dropped skipped items from
+  the count.
+
 ## [1.2.0] — 2026-07-31
 
 ### Added
@@ -116,6 +135,7 @@ here for continuity. See the [`legacy-0.9`] branch for that code.
 
 - Early releases of the original Golang Tidal FLAC/MQA downloader.
 
+[1.3.0]: https://github.com/spbkaizo/tidlr/releases/tag/v1.3.0
 [1.2.0]: https://github.com/spbkaizo/tidlr/releases/tag/v1.2.0
 [1.1.0]: https://github.com/spbkaizo/tidlr/releases/tag/v1.1.0
 [1.0.0]: https://github.com/spbkaizo/tidlr/releases/tag/v1.0.0

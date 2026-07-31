@@ -120,6 +120,59 @@ func TestRequeueFailed(t *testing.T) {
 	}
 }
 
+func TestSkipRecordsError(t *testing.T) {
+	q := newTestQueue(t)
+	q.Enqueue(sample[:1], false)
+	it, _ := q.ClaimPending(StateDownloading)
+	if err := q.Skip(it.ReviewID, errTest); err != nil {
+		t.Fatal(err)
+	}
+	counts, _ := q.Counts()
+	if counts[StateSkipped] != 1 {
+		t.Fatalf("skipped = %d, want 1", counts[StateSkipped])
+	}
+	if counts[StateFailed] != 0 {
+		t.Fatalf("failed = %d, want 0 (skip must not count as failed)", counts[StateFailed])
+	}
+}
+
+// A skipped item is permanent: `retry` must leave it alone, or a genuinely
+// unmatchable album churns on every run forever.
+func TestRequeueFailedLeavesSkipped(t *testing.T) {
+	q := newTestQueue(t)
+	q.Enqueue(sample, false)
+
+	failed, _ := q.ClaimPending(StateDownloading)
+	q.Fail(failed.ReviewID, errTest)
+	skipped, _ := q.ClaimPending(StateDownloading)
+	q.Skip(skipped.ReviewID, errTest)
+
+	n, err := q.RequeueFailed()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if n != 1 {
+		t.Fatalf("RequeueFailed = %d, want 1 (the failed item only)", n)
+	}
+
+	counts, _ := q.Counts()
+	if counts[StateSkipped] != 1 {
+		t.Errorf("skipped = %d, want 1 (must survive requeue)", counts[StateSkipped])
+	}
+	if counts[StatePending] != 1 {
+		t.Errorf("pending = %d, want 1", counts[StatePending])
+	}
+
+	// Repeated retries must never resurrect it.
+	for i := 0; i < 3; i++ {
+		q.RequeueFailed()
+	}
+	counts, _ = q.Counts()
+	if counts[StateSkipped] != 1 {
+		t.Errorf("after repeated retries: skipped = %d, want 1", counts[StateSkipped])
+	}
+}
+
 func TestRequeueStale(t *testing.T) {
 	q := newTestQueue(t)
 	q.Enqueue(sample, false)

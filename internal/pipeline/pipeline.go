@@ -92,11 +92,13 @@ func (p *Pipeline) runDownload(ctx context.Context, item queue.Item) (string, bo
 		var noMatch downloader.ErrNoMatch
 		if errors.As(err, &noMatch) {
 			// Not a transient failure: no Tidal album matched (e.g. garbled
-			// ADM title). Record and move on; retry won't help.
+			// ADM title). Mark it skipped rather than failed so `retry` does
+			// not churn on it forever.
 			p.logf("skipped (no match): %s — %s", item.Artist, item.Album)
-		} else {
-			p.logf("download failed: %s — %s: %v", item.Artist, item.Album, err)
+			p.Queue.Skip(item.ReviewID, err)
+			return "", false, false
 		}
+		p.logf("download failed: %s — %s: %v", item.Artist, item.Album, err)
 		p.Queue.Fail(item.ReviewID, err)
 		return "", false, false
 	}

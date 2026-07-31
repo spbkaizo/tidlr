@@ -23,6 +23,11 @@ const (
 	StateConverting  State = "converting"  // FLAC->ALAC in progress
 	StateDone        State = "done"        // ALAC delivered
 	StateFailed      State = "failed"      // gave up after error
+	// StateSkipped is a permanent, non-retryable outcome: no Tidal album
+	// matches the ADM title (typically because ADM's title is garbled). Unlike
+	// StateFailed, RequeueFailed leaves these alone, so they stop churning on
+	// every `retry`.
+	StateSkipped State = "skipped"
 )
 
 // Item is one album in the queue.
@@ -258,8 +263,21 @@ func (q *Queue) Fail(reviewID int, cause error) error {
 	return err
 }
 
+// Skip marks an item permanently skipped: a retry cannot help, so RequeueFailed
+// will not pick it up again. Used when no Tidal album matches the ADM title.
+func (q *Queue) Skip(reviewID int, cause error) error {
+	msg := ""
+	if cause != nil {
+		msg = cause.Error()
+	}
+	_, err := q.db.Exec(`UPDATE items SET state=?, last_error=?, updated_at=? WHERE review_id=?`,
+		StateSkipped, msg, time.Now().UTC(), reviewID)
+	return err
+}
+
 // RequeueFailed moves all failed items back to pending so a subsequent run
-// retries them. Returns how many were requeued.
+// retries them. Skipped items are deliberately excluded — they are permanent.
+// Returns how many were requeued.
 func (q *Queue) RequeueFailed() (int, error) {
 	res, err := q.db.Exec(`UPDATE items SET state=?, last_error='', updated_at=? WHERE state=?`,
 		StatePending, time.Now().UTC(), StateFailed)
