@@ -5,8 +5,8 @@
 //
 //	tidlr scrape          Fetch ADM "Just in" and enqueue new albums.
 //	tidlr run             Download + convert all pending queue items.
-//	tidlr sync            scrape then run (the everyday command).
-//	tidlr retry           Requeue failed items, then run.
+//	tidlr sync            requeue failed items, scrape, then run (the everyday command).
+//	tidlr retry           Requeue failed items, then run (no scrape).
 //	tidlr status          Show queue state counts.
 //
 // Flags: -config <path>  (defaults to ./config.toml if present).
@@ -23,9 +23,11 @@ import (
 	"regexp"
 	"strconv"
 	"strings"
+	"sync"
 	"syscall"
 	"time"
 
+	"github.com/schollz/progressbar/v3"
 	"github.com/simonb/tidlr/internal/adm"
 	"github.com/simonb/tidlr/internal/config"
 	"github.com/simonb/tidlr/internal/convert"
@@ -113,6 +115,13 @@ func main() {
 	case "run":
 		mustRun(ctx, cfg, q)
 	case "sync":
+		n, err := q.RequeueFailed()
+		if err != nil {
+			log.Fatalf("sync: %v", err)
+		}
+		if n > 0 {
+			log.Printf("requeued %d failed item(s) from previous run", n)
+		}
 		mustScrape(ctx, q, sinceTime, *force)
 		mustRun(ctx, cfg, q)
 	case "retry":
@@ -219,6 +228,54 @@ func mustRun(ctx context.Context, cfg config.Config, q *queue.Queue) {
 	mustStatus(q)
 }
 
+// trackProgress renders one shared spinning progress bar across a batch of
+// concurrently-downloading tracks. Tracks download in parallel (default 8 at
+// once), so distinct per-track bars would tear on the same terminal line;
+// instead the bar's label reflects whichever track most recently reported a
+// segment, with a running count of tracks started.
+type trackProgress struct {
+	bar     *progressbar.ProgressBar
+	mu      sync.Mutex
+	started int
+	total   int
+}
+
+func newTrackProgress(total int) *trackProgress {
+	return &trackProgress{
+		total: total,
+		bar: progressbar.NewOptions(-1,
+			progressbar.OptionSetWriter(os.Stderr),
+			progressbar.OptionSpinnerType(11),
+			progressbar.OptionSetRenderBlankState(true),
+			progressbar.OptionClearOnFinish(),
+		),
+	}
+}
+
+// onTrackStart is a tidal.Downloader.OnTrackStart implementation.
+func (p *trackProgress) onTrackStart(tr tidal.Track) func(done, total int) {
+	p.mu.Lock()
+	p.started++
+	n := p.started
+	p.mu.Unlock()
+
+	return func(done, total int) {
+		p.mu.Lock()
+		defer p.mu.Unlock()
+		label := fmt.Sprintf("track %d", n)
+		if p.total > 0 {
+			label = fmt.Sprintf("[%d/%d]", n, p.total)
+		}
+		p.bar.Describe(fmt.Sprintf("%s %s (segment %d/%d)", label, tr.Title, done, total))
+		p.bar.Add(1)
+	}
+}
+
+func (p *trackProgress) finish() {
+	p.bar.Finish()
+	p.bar.Close()
+}
+
 // authedClient loads the Tidal token and returns a ready client, refreshing the
 // token if it is near expiry.
 func authedClient(ctx context.Context, cfg config.Config) *tidal.Client {
@@ -259,7 +316,10 @@ func mustPlaylist(ctx context.Context, cfg config.Config, arg string) {
 		log.Fatalf("scratch dir: %v", err)
 	}
 	log.Printf("downloading playlist %s ...", uuid)
+	prog := newTrackProgress(0) // total tracks unknown until fetched; shown as running count
+	dl.OnTrackStart = prog.onTrackStart
 	res, err := dl.DownloadPlaylist(ctx, uuid, cfg.Quality, scratch)
+	prog.finish()
 	if err != nil {
 		log.Fatalf("playlist download: %v", err)
 	}
@@ -311,7 +371,10 @@ func mustAlbum(ctx context.Context, cfg config.Config, arg string) {
 // downloadOneAlbum downloads and converts a single album; errors are returned
 // (not fatal) so a batch can continue.
 func downloadOneAlbum(ctx context.Context, cfg config.Config, dl *tidal.Downloader, conv *convert.Converter, scratch string, albumID int64) error {
+	prog := newTrackProgress(0) // total tracks unknown until fetched; shown as running count
+	dl.OnTrackStart = prog.onTrackStart
 	res, err := dl.DownloadAlbum(ctx, albumID, cfg.Quality, scratch)
+	prog.finish()
 	if err != nil {
 		return err
 	}
@@ -345,7 +408,10 @@ func mustTrack(ctx context.Context, cfg config.Config, arg string) {
 		log.Fatalf("scratch dir: %v", err)
 	}
 	log.Printf("downloading %d track(s) ...", len(ids))
+	prog := newTrackProgress(len(ids))
+	dl.OnTrackStart = prog.onTrackStart
 	res, err := dl.DownloadTracks(ctx, ids, cfg.Quality, scratch)
+	prog.finish()
 	if err != nil {
 		log.Fatalf("track download: %v", err)
 	}
@@ -435,8 +501,8 @@ Commands:
   login     Authenticate with Tidal (device-code flow); needed once
   scrape    Enqueue new albums from ADM (uses --since if given, else "Just in")
   run       Download + convert all pending queue items
-  sync      scrape, then run  (the everyday command)
-  retry     Requeue failed items, then run
+  sync      requeue failed items, scrape, then run  (the everyday command)
+  retry     Requeue failed items, then run (no scrape)
   status    Show queue state counts
   version   Print the tidlr version
 
