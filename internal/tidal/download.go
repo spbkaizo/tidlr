@@ -51,6 +51,13 @@ type Downloader struct {
 	Threads   int         // concurrent track downloads (default 4)
 	Log       *log.Logger // optional; used to report per-track skips
 
+	// OnTrackStart, if set, is called once when a track begins downloading. The
+	// returned callback (if non-nil) is invoked after each segment is fetched
+	// with (segments done, total segments), letting callers render live
+	// per-track progress (e.g. a progress bar) without this package depending
+	// on any particular UI library.
+	OnTrackStart func(tr Track) (onSegment func(done, total int))
+
 	once   sync.Once
 	fetchC *http.Client // long-timeout client for streaming track bodies
 }
@@ -121,7 +128,11 @@ func (d *Downloader) DownloadAlbum(ctx context.Context, albumID int64, quality, 
 			defer wg.Done()
 			defer func() { <-sem }()
 
-			lossless, err := d.downloadTrack(ctx, tr, albumTrackMeta(tr, album), apiQuality, albumDir)
+			var onSegment func(done, total int)
+			if d.OnTrackStart != nil {
+				onSegment = d.OnTrackStart(tr)
+			}
+			lossless, err := d.downloadTrack(ctx, tr, albumTrackMeta(tr, album), apiQuality, albumDir, onSegment)
 			mu.Lock()
 			defer mu.Unlock()
 			if err != nil {
@@ -223,7 +234,11 @@ func (d *Downloader) DownloadPlaylist(ctx context.Context, uuid, quality, destDi
 			defer func() { <-sem }()
 
 			meta := d.playlistTrackMeta(ctx, position, width, tr, coverDir)
-			lossless, err := d.downloadTrack(ctx, tr, meta, apiQuality, plDir)
+			var onSegment func(done, total int)
+			if d.OnTrackStart != nil {
+				onSegment = d.OnTrackStart(tr)
+			}
+			lossless, err := d.downloadTrack(ctx, tr, meta, apiQuality, plDir, onSegment)
 			mu.Lock()
 			defer mu.Unlock()
 			if err != nil {
@@ -302,7 +317,11 @@ func (d *Downloader) DownloadTracks(ctx context.Context, trackIDs []int64, quali
 			}
 
 			meta := d.trackMetaFor(ctx, tr, coverDir)
-			lossless, err := d.downloadTrack(ctx, tr, meta, apiQuality, destDir)
+			var onSegment func(done, total int)
+			if d.OnTrackStart != nil {
+				onSegment = d.OnTrackStart(tr)
+			}
+			lossless, err := d.downloadTrack(ctx, tr, meta, apiQuality, destDir, onSegment)
 			mu.Lock()
 			defer mu.Unlock()
 			if err != nil {
@@ -420,8 +439,10 @@ func albumTrackMeta(tr Track, album Album) trackMeta {
 
 // downloadTrack fetches one track's stream, writes it, tags it, and remuxes
 // HiRes FLAC-in-mp4 into a real .flac. Returns whether the delivered file is
-// lossless FLAC (vs. a lossy fallback container such as Dolby Atmos).
-func (d *Downloader) downloadTrack(ctx context.Context, tr Track, meta trackMeta, apiQuality, destDir string) (bool, error) {
+// lossless FLAC (vs. a lossy fallback container such as Dolby Atmos). If
+// onSegment is non-nil, it is called after each segment is fetched with
+// (segments done, total segments) so callers can render live progress.
+func (d *Downloader) downloadTrack(ctx context.Context, tr Track, meta trackMeta, apiQuality, destDir string, onSegment func(done, total int)) (bool, error) {
 	ts, err := d.Client.GetTrackStream(ctx, tr.ID, apiQuality)
 	if err != nil {
 		return false, err
@@ -445,7 +466,7 @@ func (d *Downloader) downloadTrack(ctx context.Context, tr Track, meta trackMeta
 	}
 
 	raw := filepath.Join(destDir, meta.FileBase+".raw"+info.Extension)
-	if err := d.fetchSegments(ctx, info.URLs, raw); err != nil {
+	if err := d.fetchSegments(ctx, info.URLs, raw, onSegment); err != nil {
 		return false, err
 	}
 
@@ -504,8 +525,10 @@ func (d *Downloader) tag(ctx context.Context, src, dst string, meta trackMeta) e
 // fetchSegments downloads and concatenates the segment URLs into path, retrying
 // the whole fetch a few times on transient network errors (segment drops from
 // e.g. a firewall interrupting a connection). Writes via a unique temp file so
-// concurrent downloads can never collide, and cleans it up on failure.
-func (d *Downloader) fetchSegments(ctx context.Context, urls []string, path string) error {
+// concurrent downloads can never collide, and cleans it up on failure. If
+// onSegment is non-nil, it is called after each segment is fetched with
+// (segments done, total segments).
+func (d *Downloader) fetchSegments(ctx context.Context, urls []string, path string, onSegment func(done, total int)) error {
 	if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
 		return err
 	}
@@ -516,7 +539,7 @@ func (d *Downloader) fetchSegments(ctx context.Context, urls []string, path stri
 		if ctx.Err() != nil {
 			return ctx.Err()
 		}
-		err := d.fetchSegmentsOnce(ctx, urls, path)
+		err := d.fetchSegmentsOnce(ctx, urls, path, onSegment)
 		if err == nil {
 			return nil
 		}
@@ -542,7 +565,7 @@ func (d *Downloader) fetchSegments(ctx context.Context, urls []string, path stri
 	return lastErr
 }
 
-func (d *Downloader) fetchSegmentsOnce(ctx context.Context, urls []string, path string) error {
+func (d *Downloader) fetchSegmentsOnce(ctx context.Context, urls []string, path string, onSegment func(done, total int)) error {
 	// A unique temp name per attempt guarantees no collision between concurrent
 	// track downloads and no stale ".part" from a prior failed attempt.
 	tmp, err := os.CreateTemp(filepath.Dir(path), ".dl-*")
@@ -559,7 +582,7 @@ func (d *Downloader) fetchSegmentsOnce(ctx context.Context, urls []string, path 
 		}
 	}()
 
-	for _, u := range urls {
+	for i, u := range urls {
 		req, err := http.NewRequestWithContext(ctx, http.MethodGet, u, nil)
 		if err != nil {
 			return err
@@ -581,6 +604,9 @@ func (d *Downloader) fetchSegmentsOnce(ctx context.Context, urls []string, path 
 		resp.Body.Close()
 		if err != nil {
 			return err
+		}
+		if onSegment != nil {
+			onSegment(i+1, len(urls))
 		}
 	}
 	if err := tmp.Close(); err != nil {
