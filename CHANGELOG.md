@@ -3,6 +3,37 @@
 All notable changes to `tidlr` are documented here. This project adheres to
 [Semantic Versioning](https://semver.org).
 
+## [1.5.0] — 2026-09-01
+
+### Added
+
+- **Multi-line per-track + album progress for `--album` downloads.** Live
+  display now shows one row per concurrently-downloading track (title and
+  segment progress bar, up to `Threads` rows) plus a trailing album-wide
+  "N/M tracks" bar, redrawn in place via ANSI cursor movement. Falls back to
+  a no-op on non-TTY output (redirected/CI logs), since there's no cursor to
+  rewind there.
+- `Downloader.OnAlbumStart(totalTracks int)`, called once the track list is
+  fetched, so callers can size an album-wide progress display before any
+  track starts downloading.
+
+Playlist and `--track` downloads are unchanged (still the single shared
+spinner) — there's no natural "album" grouping for those.
+
+## [1.4.0] — 2026-08-28
+
+### Added
+
+- **Live progress bar for track downloads.** `Downloader` reports
+  per-segment progress via a new `OnTrackStart` callback; the CLI renders it
+  as a shared spinning progress bar across concurrent track downloads
+  (`--album`, `--playlist`, `--track`).
+
+### Changed
+
+- `tidlr sync` now requeues failed items before scraping, matching `retry`'s
+  existing behaviour — previously only `retry` did this.
+
 ## [1.3.0] — 2026-07-31
 
 ### Added
@@ -135,6 +166,8 @@ here for continuity. See the [`legacy-0.9`] branch for that code.
 
 - Early releases of the original Golang Tidal FLAC/MQA downloader.
 
+[1.5.0]: https://github.com/spbkaizo/tidlr/releases/tag/v1.5.0
+[1.4.0]: https://github.com/spbkaizo/tidlr/releases/tag/v1.4.0
 [1.3.0]: https://github.com/spbkaizo/tidlr/releases/tag/v1.3.0
 [1.2.0]: https://github.com/spbkaizo/tidlr/releases/tag/v1.2.0
 [1.1.0]: https://github.com/spbkaizo/tidlr/releases/tag/v1.1.0
