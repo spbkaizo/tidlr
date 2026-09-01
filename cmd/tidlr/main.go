@@ -27,6 +27,7 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/mattn/go-isatty"
 	"github.com/schollz/progressbar/v3"
 	"github.com/simonb/tidlr/internal/adm"
 	"github.com/simonb/tidlr/internal/config"
@@ -276,6 +277,142 @@ func (p *trackProgress) finish() {
 	p.bar.Close()
 }
 
+// albumProgress renders a live multi-line display for one album download: one
+// row per in-flight track (up to Threads concurrent rows) showing its segment
+// progress, plus a trailing album-wide row showing tracks completed. It
+// redraws in place using ANSI cursor movement, so it only animates on a real
+// terminal; on a non-TTY (redirected/CI logs) it falls back to printing each
+// track's completion once, since there is no cursor to rewind.
+type albumProgress struct {
+	mu       sync.Mutex
+	tty      bool
+	total    int // total tracks in the album; set by onAlbumStart
+	done     int
+	rows     []albumProgressRow // fixed slots, one per concurrent track
+	lastDraw int                // number of terminal lines the previous draw occupied
+}
+
+type albumProgressRow struct {
+	active bool
+	title  string
+	done   int
+	total  int
+}
+
+func newAlbumProgress(threads int) *albumProgress {
+	if threads <= 0 {
+		threads = 4
+	}
+	return &albumProgress{
+		tty:  isatty.IsTerminal(os.Stderr.Fd()),
+		rows: make([]albumProgressRow, threads),
+	}
+}
+
+// onAlbumStart is a tidal.Downloader.OnAlbumStart implementation.
+func (p *albumProgress) onAlbumStart(total int) {
+	p.mu.Lock()
+	defer p.mu.Unlock()
+	p.total = total
+}
+
+// onTrackStart is a tidal.Downloader.OnTrackStart implementation.
+func (p *albumProgress) onTrackStart(tr tidal.Track) func(done, total int) {
+	p.mu.Lock()
+	slot := -1
+	for i := range p.rows {
+		if !p.rows[i].active {
+			slot = i
+			break
+		}
+	}
+	if slot == -1 {
+		// More concurrent tracks than rows (shouldn't happen: rows == Threads,
+		// the actual concurrency cap); fall back to overwriting the first row
+		// rather than losing the callback.
+		slot = 0
+	}
+	p.rows[slot] = albumProgressRow{active: true, title: tr.Title}
+	p.draw()
+	p.mu.Unlock()
+
+	return func(done, total int) {
+		p.mu.Lock()
+		defer p.mu.Unlock()
+		p.rows[slot].done = done
+		p.rows[slot].total = total
+		if done >= total {
+			p.rows[slot] = albumProgressRow{}
+			p.done++
+		}
+		p.draw()
+	}
+}
+
+// draw renders the current state. Must be called with mu held.
+func (p *albumProgress) draw() {
+	if !p.tty {
+		return
+	}
+	// Move cursor up to the start of the previous draw, then redraw every line
+	// (clearing each first, since a new line may be shorter than the old one).
+	if p.lastDraw > 0 {
+		fmt.Fprintf(os.Stderr, "\x1b[%dA", p.lastDraw)
+	}
+	lines := 0
+	for _, r := range p.rows {
+		fmt.Fprint(os.Stderr, "\x1b[2K")
+		if r.active {
+			fmt.Fprintf(os.Stderr, "  %-40s %s\n", truncate(r.title, 40), barString(r.done, r.total, 20))
+		} else {
+			fmt.Fprintln(os.Stderr)
+		}
+		lines++
+	}
+	fmt.Fprint(os.Stderr, "\x1b[2K")
+	fmt.Fprintf(os.Stderr, "  album %s %d/%d tracks\n", barString(p.done, p.total, 20), p.done, p.total)
+	lines++
+	p.lastDraw = lines
+}
+
+// finish clears the live display (on a TTY) or, on a non-TTY, is a no-op since
+// nothing was drawn to clear.
+func (p *albumProgress) finish() {
+	p.mu.Lock()
+	defer p.mu.Unlock()
+	if !p.tty || p.lastDraw == 0 {
+		return
+	}
+	fmt.Fprintf(os.Stderr, "\x1b[%dA", p.lastDraw)
+	for i := 0; i < p.lastDraw; i++ {
+		fmt.Fprint(os.Stderr, "\x1b[2K\n")
+	}
+	fmt.Fprintf(os.Stderr, "\x1b[%dA", p.lastDraw)
+	p.lastDraw = 0
+}
+
+func truncate(s string, n int) string {
+	r := []rune(s)
+	if len(r) <= n {
+		return s
+	}
+	if n <= 1 {
+		return string(r[:n])
+	}
+	return string(r[:n-1]) + "…"
+}
+
+func barString(done, total, width int) string {
+	if total <= 0 {
+		return "[" + strings.Repeat("-", width) + "]"
+	}
+	filled := done * width / total
+	if filled > width {
+		filled = width
+	}
+	return "[" + strings.Repeat("#", filled) + strings.Repeat("-", width-filled) + "]"
+}
+
 // authedClient loads the Tidal token and returns a ready client, refreshing the
 // token if it is near expiry.
 func authedClient(ctx context.Context, cfg config.Config) *tidal.Client {
@@ -371,7 +508,8 @@ func mustAlbum(ctx context.Context, cfg config.Config, arg string) {
 // downloadOneAlbum downloads and converts a single album; errors are returned
 // (not fatal) so a batch can continue.
 func downloadOneAlbum(ctx context.Context, cfg config.Config, dl *tidal.Downloader, conv *convert.Converter, scratch string, albumID int64) error {
-	prog := newTrackProgress(0) // total tracks unknown until fetched; shown as running count
+	prog := newAlbumProgress(dl.Threads)
+	dl.OnAlbumStart = prog.onAlbumStart
 	dl.OnTrackStart = prog.onTrackStart
 	res, err := dl.DownloadAlbum(ctx, albumID, cfg.Quality, scratch)
 	prog.finish()
