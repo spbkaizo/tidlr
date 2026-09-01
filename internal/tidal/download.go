@@ -51,6 +51,10 @@ type Downloader struct {
 	Threads   int         // concurrent track downloads (default 4)
 	Log       *log.Logger // optional; used to report per-track skips
 
+	// OnAlbumStart, if set, is called once by DownloadAlbum after the track
+	// list is fetched, with the total number of tracks in the album.
+	OnAlbumStart func(totalTracks int)
+
 	// OnTrackStart, if set, is called once when a track begins downloading. The
 	// returned callback (if non-nil) is invoked after each segment is fetched
 	// with (segments done, total segments), letting callers render live
@@ -89,6 +93,9 @@ func (d *Downloader) DownloadAlbum(ctx context.Context, albumID int64, quality, 
 	}
 	if len(tracks) == 0 {
 		return DownloadResult{}, fmt.Errorf("album %d has no tracks", albumID)
+	}
+	if d.OnAlbumStart != nil {
+		d.OnAlbumStart(len(tracks))
 	}
 
 	albumDir := filepath.Join(destDir, sanitize(album.ArtistName()), sanitize(album.Title))
