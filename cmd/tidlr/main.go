@@ -42,6 +42,21 @@ import (
 // to "dev" for local/unstamped builds.
 var version = "dev"
 
+// stringList is a flag.Value that accumulates every occurrence of a flag rather
+// than keeping only the last, so -album A -album B downloads both. Each value
+// may itself hold several space/comma-separated ids; the downstream parsers
+// split them, so the values are simply joined with a space.
+type stringList []string
+
+func (l *stringList) String() string { return strings.Join(*l, " ") }
+
+func (l *stringList) Set(v string) error {
+	*l = append(*l, v)
+	return nil
+}
+
+func (l *stringList) joined() string { return strings.Join(*l, " ") }
+
 func main() {
 	log.SetFlags(log.Ltime)
 
@@ -49,8 +64,9 @@ func main() {
 	force := flag.Bool("force", false, "re-download albums already in the library, overwriting files")
 	since := flag.String("since", "", "scrape all albums added on/after this date (DDMMYY or DD/MM/YYYY)")
 	playlist := flag.String("playlist", "", "download a Tidal playlist by URL or UUID into <output>/playlist/<name>")
-	album := flag.String("album", "", "download a Tidal album by URL or ID into <output>/<artist>/<album>")
-	track := flag.String("track", "", "download individual Tidal tracks by URL or ID into <output>/tracks")
+	var album, track stringList
+	flag.Var(&album, "album", "download a Tidal album by URL or ID into <output>/<artist>/<album> (repeatable)")
+	flag.Var(&track, "track", "download individual Tidal tracks by URL or ID into <output>/tracks (repeatable)")
 	showVersion := flag.Bool("version", false, "print version and exit")
 	flag.Usage = usage
 	flag.Parse()
@@ -61,7 +77,7 @@ func main() {
 	}
 
 	// --playlist, --album and --track are standalone operations: download and exit.
-	if *playlist != "" || *album != "" || *track != "" {
+	if *playlist != "" || len(album) > 0 || len(track) > 0 {
 		cfg, err := config.Load(*cfgPath)
 		if err != nil {
 			log.Fatalf("config: %v", err)
@@ -71,10 +87,10 @@ func main() {
 		switch {
 		case *playlist != "":
 			mustPlaylist(ctx, cfg, *playlist)
-		case *album != "":
-			mustAlbum(ctx, cfg, *album)
+		case len(album) > 0:
+			mustAlbum(ctx, cfg, album.joined())
 		default:
-			mustTrack(ctx, cfg, *track)
+			mustTrack(ctx, cfg, track.joined())
 		}
 		return
 	}
@@ -653,9 +669,12 @@ Flags:
   -playlist URL   Download a Tidal playlist (URL or UUID) as ALAC into
                   <output_dir>/playlist/<name>/. Standalone; ignores other args.
   -album URL      Download a Tidal album (URL or ID) as ALAC into
-                  <output_dir>/<artist>/<album>/. Standalone; ignores other args.
+                  <output_dir>/<artist>/<album>/. Repeatable, and one value may
+                  list several space/comma-separated albums. Standalone; ignores
+                  other args.
   -track URL      Download individual Tidal tracks (URLs or IDs, space/comma-
-                  separated) as ALAC into <output_dir>/tracks/. Standalone.
+                  separated) as ALAC into <output_dir>/tracks/. Repeatable.
+                  Standalone.
 
 Examples:
   tidlr sync                 # grab the latest "Just in" albums
@@ -663,6 +682,7 @@ Examples:
   tidlr --force --since 010226 sync  # re-download that range from scratch
   tidlr --playlist https://tidal.com/playlist/f98d7491-...  # download a playlist
   tidlr --album https://tidal.com/album/540168117  # download a single album
+  tidlr --album 540168117 --album 522251328        # download several albums
   tidlr --track https://tidal.com/track/113302335  # download a single track
 `)
 }
