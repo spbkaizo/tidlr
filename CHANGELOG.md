@@ -3,6 +3,19 @@
 All notable changes to `tidlr` are documented here. This project adheres to
 [Semantic Versioning](https://semver.org).
 
+## [1.6.0] — 2026-09-14
+
+### Fixed
+
+- **`--album` and `--track` now accept repeated flags.** Both were plain
+  string flags, so `tidlr --album A --album B` silently kept only the last
+  value and downloaded B alone. They now accumulate every occurrence; the
+  collected values feed the existing multi-id parsers, which already split
+  on spaces and commas, so `--album A --album B`, `--album "A B"` and
+  `--album A,B` are all equivalent. Batch handling itself was already in
+  place — each album is downloaded in turn, and one failure doesn't abort
+  the rest.
+
 ## [1.5.0] — 2026-09-01
 
 ### Added
@@ -166,6 +179,7 @@ here for continuity. See the [`legacy-0.9`] branch for that code.
 
 - Early releases of the original Golang Tidal FLAC/MQA downloader.
 
+[1.6.0]: https://github.com/spbkaizo/tidlr/releases/tag/v1.6.0
 [1.5.0]: https://github.com/spbkaizo/tidlr/releases/tag/v1.5.0
 [1.4.0]: https://github.com/spbkaizo/tidlr/releases/tag/v1.4.0
 [1.3.0]: https://github.com/spbkaizo/tidlr/releases/tag/v1.3.0
