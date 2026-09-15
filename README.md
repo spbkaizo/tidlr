@@ -36,7 +36,7 @@ the only runtime dependency is `ffmpeg`.
 
 ## Requirements
 
-- **Go 1.26+** (to build/install)
+- **Go 1.27+** (to build/install)
 - **ffmpeg** (for FLAC→ALAC conversion) — `brew install ffmpeg`
 - **A paid Tidal subscription** (HiFi/HiFi Plus for lossless)
 
