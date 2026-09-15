@@ -149,12 +149,44 @@ func TestConvertKeepFLAC(t *testing.T) {
 	}
 	flacDir := t.TempDir()
 	makeFLAC(t, filepath.Join(flacDir, "song.flac"), "Song")
+	makeCover(t, filepath.Join(flacDir, "cover.jpg"))
 
 	c := &Converter{FFmpegBin: "ffmpeg", OutputDir: t.TempDir(), KeepFLAC: true}
-	if _, err := c.Convert(context.Background(), adm.Release{Artist: "A", Album: "B"}, flacDir, true); err != nil {
+	albumOut, err := c.Convert(context.Background(), adm.Release{Artist: "A", Album: "B"}, flacDir, true)
+	if err != nil {
 		t.Fatal(err)
 	}
 	if _, err := os.Stat(filepath.Join(flacDir, "song.flac")); err != nil {
 		t.Errorf("KeepFLAC=true but source removed: %v", err)
+	}
+	// The scratch dir is wiped after conversion, so the library copy is what
+	// actually survives: KeepFLAC must deliver both formats plus the cover.
+	for _, name := range []string{"song.m4a", "song.flac", "cover.jpg"} {
+		if _, err := os.Stat(filepath.Join(albumOut, name)); err != nil {
+			t.Errorf("KeepFLAC=true but %s not delivered to output: %v", name, err)
+		}
+	}
+}
+
+func TestConvertNoKeepFLACOmitsSources(t *testing.T) {
+	if _, err := exec.LookPath("ffmpeg"); err != nil {
+		t.Skip("ffmpeg not installed")
+	}
+	flacDir := t.TempDir()
+	makeFLAC(t, filepath.Join(flacDir, "song.flac"), "Song")
+	makeCover(t, filepath.Join(flacDir, "cover.jpg"))
+
+	c := &Converter{FFmpegBin: "ffmpeg", OutputDir: t.TempDir(), KeepFLAC: false}
+	albumOut, err := c.Convert(context.Background(), adm.Release{Artist: "A", Album: "B"}, flacDir, false)
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, name := range []string{"song.flac", "cover.jpg"} {
+		if _, err := os.Stat(filepath.Join(albumOut, name)); err == nil {
+			t.Errorf("KeepFLAC=false but %s was delivered to output", name)
+		}
+	}
+	if _, err := os.Stat(filepath.Join(albumOut, "song.m4a")); err != nil {
+		t.Errorf("m4a not delivered: %v", err)
 	}
 }

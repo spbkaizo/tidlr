@@ -27,5 +27,6 @@ download_workers = 3
 # How many albums to convert concurrently (CPU bound; conversion is ~cheap).
 convert_workers = 4
 
-# Keep source FLACs after converting to ALAC? false deletes them to save disk.
+# Keep the source FLACs? When true, each album directory gets the .flac files
+# and cover.jpg alongside the .m4a, for players that cannot read ALAC.
 keep_flac = false
