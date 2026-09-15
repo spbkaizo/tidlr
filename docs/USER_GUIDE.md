@@ -22,7 +22,7 @@ a music library up to date. For a high-level overview, see the
 
 ## 1. Installation
 
-Prerequisites: **Go 1.26+**, **ffmpeg**, and a **paid Tidal subscription**.
+Prerequisites: **Go 1.27+**, **ffmpeg**, and a **paid Tidal subscription**.
 
 ```sh
 brew install ffmpeg          # if you don't have it
