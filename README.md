@@ -139,7 +139,7 @@ tidlr --album/--playlist ───►│              (search + artist catalogue
 ```toml
 output_dir = "~/Music/tidlr"   # where ALAC files land
 quality    = "max"             # low | normal | high | max  (max = HiRes lossless)
-keep_flac  = false             # true also puts FLACs + cover.jpg in the library
+keep_flac  = false             # true also puts the source FLACs in the library
 ```
 
 See `config.example.toml` for all options and the

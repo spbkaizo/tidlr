@@ -3,6 +3,21 @@
 All notable changes to `tidlr` are documented here. This project adheres to
 [Semantic Versioning](https://semver.org).
 
+## [1.7.0] — 2026-09-15
+
+### Changed
+
+- **`cover.jpg` is now always delivered for album downloads**, no longer only
+  when `keep_flac = true`. Embedded art isn't read reliably by every player —
+  car head units and some streamers want artwork as a separate file — and that
+  applies to ALAC just as much as FLAC, so gating it on `keep_flac` was
+  arbitrary. `keep_flac` now controls only whether the source FLACs are
+  delivered alongside the ALAC.
+
+  Playlist and single-track downloads are unaffected: their tracks embed their
+  own album's art and there is no sibling `cover.jpg` to copy, so nothing is
+  written there. Delivery stays silent when no source cover exists.
+
 ## [1.6.1] — 2026-09-15
 
 ### Fixed

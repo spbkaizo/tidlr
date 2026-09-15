@@ -28,5 +28,6 @@ download_workers = 3
 convert_workers = 4
 
 # Keep the source FLACs? When true, each album directory gets the .flac files
-# and cover.jpg alongside the .m4a, for players that cannot read ALAC.
+# alongside the .m4a, for players that cannot read ALAC. (cover.jpg is always
+# delivered, whatever this is set to.)
 keep_flac = false
