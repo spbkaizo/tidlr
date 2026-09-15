@@ -3,6 +3,17 @@
 All notable changes to `tidlr` are documented here. This project adheres to
 [Semantic Versioning](https://semver.org).
 
+## [1.8.0] — 2026-09-15
+
+### Security
+
+- **Upgraded `golang.org/x/net` from v0.52.0 to v0.55.0**, picking up the fix
+  for [GHSA-5cv4-jp36-h3mw](https://github.com/advisories/GHSA-5cv4-jp36-h3mw)
+  — a denial of service in the HTML parser. The package is an indirect
+  dependency, but a reachable one: the AnyDecentMusic scraper in
+  `internal/adm` parses remote HTML through `goquery`, which sits on
+  `golang.org/x/net/html`. No source changes were needed.
+
 ## [1.7.0] — 2026-09-15
 
 ### Changed
