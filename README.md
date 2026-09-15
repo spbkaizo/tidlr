@@ -164,3 +164,7 @@ See `config.example.toml` for all options and the
 v1.0.0 is a complete, ground-up rewrite of the original 0.9.x utility. See
 [CHANGELOG.md](CHANGELOG.md) for details; the pre-1.0 code lives on the
 [`legacy-0.9`](https://github.com/spbkaizo/tidlr/tree/legacy-0.9) branch.
+
+## License
+
+BSD 3-Clause. See [LICENSE](LICENSE).

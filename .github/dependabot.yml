@@ -1,0 +1,22 @@
+# Routine version updates. Security updates are enabled separately in the
+# repo's settings and react to advisories regardless of this file.
+version: 2
+updates:
+  - package-ecosystem: gomod
+    directory: /
+    schedule:
+      interval: weekly
+    open-pull-requests-limit: 5
+    groups:
+      # One PR per week for routine bumps, rather than one per module.
+      go-dependencies:
+        patterns: ["*"]
+        update-types: [minor, patch]
+
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+    groups:
+      action-dependencies:
+        patterns: ["*"]
