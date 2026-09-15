@@ -264,7 +264,7 @@ it with `--config <path>`.
 | `download_threads` | `8`                 | Concurrent track downloads within one album/playlist.          |
 | `download_workers` | `3`                 | How many albums download at once (pipeline mode).              |
 | `convert_workers`  | `4`                 | How many albums convert at once (pipeline mode).               |
-| `keep_flac`        | `false`             | Keep the source FLACs after converting to ALAC.                |
+| `keep_flac`        | `false`             | Also deliver source FLACs and `cover.jpg` next to the ALAC.    |
 
 `~` at the start of a path is expanded to your home directory.
 

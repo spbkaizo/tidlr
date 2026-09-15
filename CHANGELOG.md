@@ -3,6 +3,24 @@
 All notable changes to `tidlr` are documented here. This project adheres to
 [Semantic Versioning](https://semver.org).
 
+## [1.6.1] — 2026-09-15
+
+### Fixed
+
+- **`keep_flac = true` now delivers FLACs to the output library.** The flag
+  only guarded the `os.Remove` of each source file, so the FLACs were left in
+  the scratch directory and never copied into the library — and the scratch
+  directory is wiped right after conversion, so they were deleted anyway. The
+  library received ALAC only, whatever the setting. Source `.flac` files are
+  now copied into the output album directory alongside the transcoded `.m4a`.
+- **`cover.jpg` is now delivered alongside the audio** when `keep_flac` is
+  true. It was read as a transcode input for embedding art, then dropped by
+  the `default` branch of the extension switch, so it never reached the
+  library. Players and car head units that need artwork as a separate file
+  now get it. Delivery happens outside the per-file loop, so the cover is
+  never counted as a delivered track nor removed as a consumed source.
+  (Thanks @starmanager01 — #4.)
+
 ## [1.6.0] — 2026-09-14
 
 ### Fixed
