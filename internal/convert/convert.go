@@ -20,7 +20,7 @@ import (
 type Converter struct {
 	FFmpegBin string // path to ffmpeg
 	OutputDir string // library root: <OutputDir>/<Artist>/<Album>/*.m4a
-	KeepFLAC  bool   // if true, deliver source FLACs alongside the ALAC and keep the scratch copies
+	KeepFLAC  bool   // if true, deliver source FLACs alongside the ALAC files too
 }
 
 // Convert delivers an album from srcDir into the output tree and returns the
@@ -113,10 +113,11 @@ func (c *Converter) convertDir(ctx context.Context, srcDir, outDir string) (stri
 		return "", fmt.Errorf("no audio files delivered from %s", srcDir)
 	}
 
-	// Deliver the cover as a separate file too, for devices that need artwork
-	// next to the audio rather than embedded. Handled outside the loop so it is
-	// never counted as a delivered track nor removed as a consumed source.
-	if c.KeepFLAC && cover != "" {
+	// Always deliver the cover as a separate file, whatever the output format:
+	// plenty of players (car head units, some streamers) don't read embedded art
+	// reliably from either ALAC or FLAC. Handled outside the loop so it is never
+	// counted as a delivered track nor removed as a consumed source.
+	if cover != "" {
 		if err := copyFile(cover, filepath.Join(outDir, "cover.jpg")); err != nil {
 			return "", fmt.Errorf("copying cover: %w", err)
 		}

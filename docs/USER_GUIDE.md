@@ -84,6 +84,8 @@ The album downloads to:
 
 Tracks are numbered (`01 - …`), tagged (title/artist/album/track), and carry
 embedded cover art. Multi-disc albums prefix the disc number (`2-01 - …`).
+Album downloads also get a `cover.jpg` in the album directory, for players
+that read artwork from a separate file rather than the audio container.
 
 ---
 
@@ -264,7 +266,7 @@ it with `--config <path>`.
 | `download_threads` | `8`                 | Concurrent track downloads within one album/playlist.          |
 | `download_workers` | `3`                 | How many albums download at once (pipeline mode).              |
 | `convert_workers`  | `4`                 | How many albums convert at once (pipeline mode).               |
-| `keep_flac`        | `false`             | Also deliver source FLACs and `cover.jpg` next to the ALAC.    |
+| `keep_flac`        | `false`             | Also deliver the source FLACs next to the ALAC.                |
 
 `~` at the start of a path is expanded to your home directory.
 

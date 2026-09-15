@@ -36,8 +36,8 @@ type Config struct {
 	// ConvertWorkers is how many albums we convert (FLAC->ALAC) concurrently.
 	ConvertWorkers int `toml:"convert_workers"`
 
-	// KeepFLAC, when true, delivers the source FLACs and cover.jpg into the
-	// output library alongside the ALAC files. Default false.
+	// KeepFLAC, when true, delivers the source FLACs into the output library
+	// alongside the ALAC files. Default false. (cover.jpg is always delivered.)
 	KeepFLAC bool `toml:"keep_flac"`
 }
 

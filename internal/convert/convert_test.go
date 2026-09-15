@@ -181,12 +181,32 @@ func TestConvertNoKeepFLACOmitsSources(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	for _, name := range []string{"song.flac", "cover.jpg"} {
-		if _, err := os.Stat(filepath.Join(albumOut, name)); err == nil {
-			t.Errorf("KeepFLAC=false but %s was delivered to output", name)
+	if _, err := os.Stat(filepath.Join(albumOut, "song.flac")); err == nil {
+		t.Error("KeepFLAC=false but song.flac was delivered to output")
+	}
+	// The cover ships regardless of format: ALAC-only libraries want it too.
+	for _, name := range []string{"song.m4a", "cover.jpg"} {
+		if _, err := os.Stat(filepath.Join(albumOut, name)); err != nil {
+			t.Errorf("%s not delivered: %v", name, err)
 		}
 	}
-	if _, err := os.Stat(filepath.Join(albumOut, "song.m4a")); err != nil {
-		t.Errorf("m4a not delivered: %v", err)
+}
+
+func TestConvertNoCoverWhenAbsent(t *testing.T) {
+	if _, err := exec.LookPath("ffmpeg"); err != nil {
+		t.Skip("ffmpeg not installed")
+	}
+	// Playlist tracks embed their own art and have no sibling cover.jpg;
+	// delivery must stay quiet rather than erroring on the missing file.
+	srcDir := t.TempDir()
+	makeFLAC(t, filepath.Join(srcDir, "song.flac"), "Song")
+
+	c := &Converter{FFmpegBin: "ffmpeg", OutputDir: t.TempDir(), KeepFLAC: false}
+	albumOut, err := c.Convert(context.Background(), adm.Release{Artist: "A", Album: "B"}, srcDir, true)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := os.Stat(filepath.Join(albumOut, "cover.jpg")); err == nil {
+		t.Error("no source cover, but cover.jpg appeared in output")
 	}
 }
