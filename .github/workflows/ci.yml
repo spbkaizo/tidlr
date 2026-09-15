@@ -26,3 +26,27 @@ jobs:
 
       - name: Build
         run: go build ./...
+
+  # Deliberately a separate job, not a step in build-test: branch protection
+  # requires that check, and a newly published advisory would otherwise block
+  # every merge until it was patched — even on PRs that changed nothing related.
+  # Kept non-blocking so it reports rather than gates.
+  vulncheck:
+    name: Vulnerability scan
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-go@v7
+        with:
+          go-version-file: go.mod
+          cache: true
+
+      # govulncheck embeds the go/types parser from the toolchain that builds
+      # it, so installing it here — against the same Go as the build — avoids
+      # the version skew that silently breaks a locally installed binary.
+      - name: Install govulncheck
+        run: go install golang.org/x/vuln/cmd/govulncheck@latest
+
+      - name: Scan
+        run: govulncheck ./...
