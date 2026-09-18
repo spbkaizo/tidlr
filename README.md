@@ -188,7 +188,8 @@ automatically when output is not a terminal (cron, redirected logs), so piping
 to a file always keeps full concurrency.
 
 See `config.example.toml` for all options and the
-**[User Guide](docs/USER_GUIDE.md)** for details.
+**[User Guide](docs/USER_GUIDE.md)** for details. Contributors: see
+**[Releasing](docs/RELEASING.md)** for the branch/PR flow and how releases are cut.
 
 ---
 
