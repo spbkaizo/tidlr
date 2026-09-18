@@ -26,6 +26,8 @@ jobs:
           - { goos: freebsd, goarch: amd64 }
     steps:
       - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0 # tags + full history, so the build can stamp the commit
 
       - uses: actions/setup-go@v7
         with:

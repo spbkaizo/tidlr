@@ -10,6 +10,8 @@
 //	tidlr status          Show queue state counts.
 //
 // Flags: -config <path>  (defaults to ./config.toml if present).
+//
+//	-v, -version  Print the version and exit.
 package main
 
 import (
@@ -21,6 +23,8 @@ import (
 	"os/signal"
 	"path/filepath"
 	"regexp"
+	"runtime"
+	"runtime/debug"
 	"strconv"
 	"strings"
 	"sync"
@@ -38,9 +42,88 @@ import (
 	"github.com/simonb/tidlr/internal/tidal"
 )
 
-// version is set at build time via -ldflags "-X main.version=...". It defaults
-// to "dev" for local/unstamped builds.
-var version = "dev"
+// version is set at build time via -ldflags "-X main.version=..." for tagged
+// release builds. It stays empty for local/unstamped builds, where
+// versionString() synthesises a "dev" version from the embedded VCS stamp
+// instead.
+var version = ""
+
+// baseVersion is the last released tag the tree is built on, set at build time
+// via -ldflags "-X main.baseVersion=$(git describe --tags --abbrev=0)" (the
+// Makefile and CI do this). It is only reported for dev builds, to say which
+// release they are based on. When unset, versionString falls back to the module
+// version the toolchain embeds, which is populated for `go install`-style
+// builds but reads "(devel)" for a plain local `go build`.
+var baseVersion = ""
+
+// versionString renders the full version banner. Tagged builds report the tag;
+// unstamped local builds report "dev" plus the commit date and short hash that
+// the Go toolchain embeds in the binary, and the release they are based on.
+//
+// The date is the commit time (not the build time), so two builds of the same
+// tree always report the same version.
+func versionString() string {
+	var b strings.Builder
+	info, _ := debug.ReadBuildInfo()
+
+	if version != "" {
+		fmt.Fprintf(&b, "tidlr %s", version)
+	} else {
+		fmt.Fprint(&b, "tidlr dev")
+		base := baseVersion
+		if base == "" && info != nil && info.Main.Version != "" && info.Main.Version != "(devel)" {
+			base = info.Main.Version
+		}
+		if base != "" {
+			fmt.Fprintf(&b, " (based on %s)", base)
+		}
+	}
+	b.WriteByte('\n')
+
+	rev, commitTime, dirty := vcsInfo(info)
+	if rev != "" {
+		short := rev
+		if len(short) > 7 {
+			short = short[:7]
+		}
+		if dirty {
+			short += "-dirty"
+		}
+		if commitTime != "" {
+			fmt.Fprintf(&b, "  commit:  %s (%s)\n", short, commitTime)
+		} else {
+			fmt.Fprintf(&b, "  commit:  %s\n", short)
+		}
+	}
+	if info != nil {
+		fmt.Fprintf(&b, "  go:      %s %s/%s\n", info.GoVersion, runtime.GOOS, runtime.GOARCH)
+	}
+	return b.String()
+}
+
+// vcsInfo pulls the revision, commit date (YYYY-MM-DD) and dirty flag out of
+// the build info the toolchain embeds. All three are absent when the binary was
+// built outside a git checkout (e.g. `go build` from a module cache), in which
+// case the caller simply omits the line.
+func vcsInfo(info *debug.BuildInfo) (rev, date string, dirty bool) {
+	if info == nil {
+		return "", "", false
+	}
+	for _, s := range info.Settings {
+		switch s.Key {
+		case "vcs.revision":
+			rev = s.Value
+		case "vcs.time":
+			// Recorded as RFC3339; report just the date.
+			if t, err := time.Parse(time.RFC3339, s.Value); err == nil {
+				date = t.Format("2006-01-02")
+			}
+		case "vcs.modified":
+			dirty = s.Value == "true"
+		}
+	}
+	return rev, date, dirty
+}
 
 // stringList is a flag.Value that accumulates every occurrence of a flag rather
 // than keeping only the last, so -album A -album B downloads both. Each value
@@ -57,6 +140,17 @@ func (l *stringList) Set(v string) error {
 
 func (l *stringList) joined() string { return strings.Join(*l, " ") }
 
+// joinArgs appends any bare trailing arguments to a flag's accumulated values.
+func joinArgs(flagged, rest string) string {
+	if rest == "" {
+		return flagged
+	}
+	if flagged == "" {
+		return rest
+	}
+	return flagged + " " + rest
+}
+
 func main() {
 	log.SetFlags(log.Ltime)
 
@@ -68,11 +162,12 @@ func main() {
 	flag.Var(&album, "album", "download a Tidal album by URL or ID into <output>/<artist>/<album> (repeatable)")
 	flag.Var(&track, "track", "download individual Tidal tracks by URL or ID into <output>/tracks (repeatable)")
 	showVersion := flag.Bool("version", false, "print version and exit")
+	flag.BoolVar(showVersion, "v", false, "print version and exit (shorthand for -version)")
 	flag.Usage = usage
 	flag.Parse()
 
 	if *showVersion {
-		fmt.Printf("tidlr %s\n", version)
+		fmt.Print(versionString())
 		return
 	}
 
@@ -84,13 +179,20 @@ func main() {
 		}
 		ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 		defer stop()
+
+		// Bare trailing arguments belong to whichever download flag was given,
+		// so `-album URL URL URL` takes all three rather than silently dropping
+		// every URL after the first (Go's flag package binds only the value
+		// immediately following -album; the rest arrive as positional args).
+		rest := strings.Join(flag.Args(), " ")
+
 		switch {
 		case *playlist != "":
 			mustPlaylist(ctx, cfg, *playlist)
 		case len(album) > 0:
-			mustAlbum(ctx, cfg, album.joined())
+			mustAlbum(ctx, cfg, joinArgs(album.joined(), rest), *force)
 		default:
-			mustTrack(ctx, cfg, track.joined())
+			mustTrack(ctx, cfg, joinArgs(track.joined(), rest))
 		}
 		return
 	}
@@ -98,6 +200,12 @@ func main() {
 	if flag.NArg() == 0 {
 		usage()
 		os.Exit(2)
+	}
+
+	// `version` needs neither config nor queue; answer before either can fail.
+	if flag.Arg(0) == "version" {
+		fmt.Print(versionString())
+		return
 	}
 
 	cfg, err := config.Load(*cfgPath)
@@ -123,8 +231,6 @@ func main() {
 	}
 
 	switch flag.Arg(0) {
-	case "version":
-		fmt.Printf("tidlr %s\n", version)
 	case "login":
 		mustLogin(ctx, cfg)
 	case "scrape":
@@ -226,18 +332,51 @@ func mustRun(ctx context.Context, cfg config.Config, q *queue.Queue) {
 		Quality:    cfg.Quality,
 		BaseDir:    cfg.DownloadDir(),
 	}
+
+	// The live per-track display draws to a single terminal region, so it can
+	// only render one album at a time. Downloading albums concurrently would
+	// interleave rows from different albums into it, so the display forces
+	// download_workers to 1: detail costs throughput, and the choice is the
+	// user's. Set progress = false in the config to keep albums concurrent.
+	//
+	// Conversion still overlaps with downloading either way, and per-album
+	// track concurrency (download_threads, default 8) is untouched — it is only
+	// the number of *albums* in flight that drops.
+	//
+	// On a non-TTY there is no cursor to rewind, so the display draws nothing;
+	// trading away concurrency for it would cost throughput and buy no output.
+	downloadWorkers := cfg.DownloadWorkers
+	quietDownloadStart := false
+	runLog := log.Default()
+	if cfg.Progress && isatty.IsTerminal(os.Stderr.Fd()) {
+		pending := 0
+		if counts, err := q.Counts(); err == nil {
+			pending = counts[queue.StatePending]
+		}
+		prog := newAlbumProgress(cfg.DownloadThreads)
+		quietDownloadStart = true
+		// Route this run's logging through the display so concurrent convert
+		// workers print above the live region instead of inside it.
+		runLog = log.New(prog, "", log.Ltime)
+		dl.Progress = &queueProgress{prog: prog, log: runLog, total: pending}
+		if downloadWorkers != 1 {
+			log.Printf("progress display on: downloading albums one at a time (set progress = false for %d concurrent)", downloadWorkers)
+			downloadWorkers = 1
+		}
+	}
 	conv := &convert.Converter{
 		FFmpegBin: cfg.FFmpegBin,
 		OutputDir: cfg.OutputDir,
 		KeepFLAC:  cfg.KeepFLAC,
 	}
 	p := &pipeline.Pipeline{
-		Queue:           q,
-		Downloader:      dl,
-		Converter:       conv,
-		DownloadWorkers: cfg.DownloadWorkers,
-		ConvertWorkers:  cfg.ConvertWorkers,
-		Log:             log.Default(),
+		Queue:              q,
+		Downloader:         dl,
+		Converter:          conv,
+		DownloadWorkers:    downloadWorkers,
+		QuietDownloadStart: quietDownloadStart,
+		ConvertWorkers:     cfg.ConvertWorkers,
+		Log:                runLog,
 	}
 	if err := p.Run(ctx); err != nil && ctx.Err() == nil {
 		log.Fatalf("run: %v", err)
@@ -330,6 +469,72 @@ func (p *albumProgress) onAlbumStart(total int) {
 	p.mu.Lock()
 	defer p.mu.Unlock()
 	p.total = total
+}
+
+// logAbove prints a log line above the live display: it erases the drawn
+// region, writes the line, then redraws. Convert workers run concurrently with
+// downloads and log as they go, so without this their output would land inside
+// the region and be overwritten by the next redraw's cursor rewind.
+//
+// It satisfies the io.Writer that a log.Logger writes into, so the pipeline's
+// existing logging needs no changes.
+func (p *albumProgress) Write(b []byte) (int, error) {
+	p.mu.Lock()
+	defer p.mu.Unlock()
+	if !p.tty {
+		return os.Stderr.Write(b)
+	}
+	// Rewind over and clear the live region, so the log line takes its place.
+	if p.lastDraw > 0 {
+		fmt.Fprintf(os.Stderr, "\x1b[%dA", p.lastDraw)
+		for i := 0; i < p.lastDraw; i++ {
+			fmt.Fprint(os.Stderr, "\x1b[2K\n")
+		}
+		fmt.Fprintf(os.Stderr, "\x1b[%dA", p.lastDraw)
+		p.lastDraw = 0
+	}
+	n, err := os.Stderr.Write(b)
+	p.draw() // redraw the region below the line just written
+	return n, err
+}
+
+// reset clears all per-album state so one albumProgress can be reused for the
+// next album. lastDraw is deliberately left alone: finish() has already
+// rewound the cursor, so the next draw starts from a clean slate.
+func (p *albumProgress) reset() {
+	p.mu.Lock()
+	defer p.mu.Unlock()
+	p.total = 0
+	p.done = 0
+	for i := range p.rows {
+		p.rows[i] = albumProgressRow{}
+	}
+}
+
+// queueProgress adapts albumProgress to downloader.AlbumProgress, so the ADM
+// pipeline gets the same live display as -album. It is only installed when
+// albums download serially; see mustRun.
+type queueProgress struct {
+	prog  *albumProgress
+	log   *log.Logger // logs through prog, so the header sits above the display
+	n     int         // albums started so far
+	total int         // albums pending at the start of the run (0 if unknown)
+}
+
+// Begin implements downloader.AlbumProgress.
+func (q *queueProgress) Begin(artist, album string) (func(int), func(tidal.Track) func(int, int), func()) {
+	q.n++
+	logger := q.log
+	if logger == nil {
+		logger = log.Default()
+	}
+	if q.total > 0 {
+		logger.Printf("[%d/%d] downloading %s — %s ...", q.n, q.total, artist, album)
+	} else {
+		logger.Printf("[%d] downloading %s — %s ...", q.n, artist, album)
+	}
+	q.prog.reset()
+	return q.prog.onAlbumStart, q.prog.onTrackStart, q.prog.finish
 }
 
 // onTrackStart is a tidal.Downloader.OnTrackStart implementation.
@@ -491,10 +696,23 @@ func mustPlaylist(ctx context.Context, cfg config.Config, arg string) {
 // mustAlbum downloads one or more Tidal albums (space/comma-separated URLs or
 // ids) and converts each to ALAC under <output_dir>/<artist>/<album>/. A single
 // album failing is logged and does not abort the rest.
-func mustAlbum(ctx context.Context, cfg config.Config, arg string) {
+func mustAlbum(ctx context.Context, cfg config.Config, arg string, force bool) {
 	ids := parseAlbumIDs(arg)
 	if len(ids) == 0 {
 		log.Fatalf("could not find any album id in %q", arg)
+	}
+	ids = dedupeIDs(ids)
+
+	// The library record lives in the queue DB. A failure to open it is not
+	// fatal: fall back to downloading everything, as before.
+	var q *queue.Queue
+	if err := os.MkdirAll(cfg.WorkDir, 0o755); err != nil {
+		log.Printf("warning: work dir: %v; not recording downloads", err)
+	} else if opened, err := queue.Open(cfg.DBPath()); err != nil {
+		log.Printf("warning: opening library: %v; not recording downloads", err)
+	} else {
+		q = opened
+		defer q.Close()
 	}
 
 	client := authedClient(ctx, cfg)
@@ -505,43 +723,79 @@ func mustAlbum(ctx context.Context, cfg config.Config, arg string) {
 		log.Fatalf("scratch dir: %v", err)
 	}
 
-	ok, failed := 0, 0
+	ok, failed, skipped := 0, 0, 0
 	for i, albumID := range ids {
 		if ctx.Err() != nil {
 			break
 		}
+		// Skip what the library already has, unless --force says otherwise.
+		if q != nil && !force {
+			if artist, album, dir, have, err := q.TidalDownload(albumID); err != nil {
+				log.Printf("warning: library lookup for %d: %v; downloading anyway", albumID, err)
+			} else if have {
+				skipped++
+				log.Printf("[%d/%d] skipping album %d: already have %q — %q at %s (use -force to re-download)",
+					i+1, len(ids), albumID, artist, album, dir)
+				continue
+			}
+		}
 		log.Printf("[%d/%d] downloading album %d ...", i+1, len(ids), albumID)
-		if err := downloadOneAlbum(ctx, cfg, dl, conv, scratch, albumID); err != nil {
+		out, artist, album, err := downloadOneAlbum(ctx, cfg, dl, conv, scratch, albumID)
+		if err != nil {
 			failed++
 			log.Printf("[%d/%d] FAILED album %d: %v", i+1, len(ids), albumID, err)
 			continue
 		}
 		ok++
+		if q != nil {
+			if err := q.MarkTidalDownloaded(albumID, artist, album, out); err != nil {
+				log.Printf("warning: recording album %d in library: %v", albumID, err)
+			}
+		}
 	}
-	log.Printf("albums: %d done, %d failed of %d", ok, failed, len(ids))
+	if skipped > 0 {
+		log.Printf("albums: %d done, %d skipped, %d failed of %d", ok, skipped, failed, len(ids))
+	} else {
+		log.Printf("albums: %d done, %d failed of %d", ok, failed, len(ids))
+	}
+}
+
+// dedupeIDs removes repeated album ids, preserving first-seen order, so the
+// same album listed twice on one command line is fetched once.
+func dedupeIDs(ids []int64) []int64 {
+	seen := make(map[int64]bool, len(ids))
+	out := ids[:0:0]
+	for _, id := range ids {
+		if seen[id] {
+			continue
+		}
+		seen[id] = true
+		out = append(out, id)
+	}
+	return out
 }
 
 // downloadOneAlbum downloads and converts a single album; errors are returned
 // (not fatal) so a batch can continue.
-func downloadOneAlbum(ctx context.Context, cfg config.Config, dl *tidal.Downloader, conv *convert.Converter, scratch string, albumID int64) error {
+func downloadOneAlbum(ctx context.Context, cfg config.Config, dl *tidal.Downloader, conv *convert.Converter, scratch string, albumID int64) (outDir, artist, albumName string, err error) {
 	prog := newAlbumProgress(dl.Threads)
 	dl.OnAlbumStart = prog.onAlbumStart
 	dl.OnTrackStart = prog.onTrackStart
 	res, err := dl.DownloadAlbum(ctx, albumID, cfg.Quality, scratch)
 	prog.finish()
 	if err != nil {
-		return err
+		return "", "", "", err
 	}
 	// res.Dir is <scratch>/<Artist>/<Album>; deliver to <output>/<Artist>/<Album>.
-	artist := filepath.Base(filepath.Dir(res.Dir))
-	albumName := filepath.Base(res.Dir)
+	artist = filepath.Base(filepath.Dir(res.Dir))
+	albumName = filepath.Base(res.Dir)
 	out, err := conv.Convert(ctx, adm.Release{Artist: artist, Album: albumName}, res.Dir, res.Lossless)
 	if err != nil {
-		return err
+		return "", "", "", err
 	}
 	os.RemoveAll(res.Dir)
 	log.Printf("done: album %q — %q -> %s", artist, albumName, out)
-	return nil
+	return out, artist, albumName, nil
 }
 
 // mustTrack downloads one or more individual Tidal tracks (space/comma-separated
@@ -661,17 +915,21 @@ Commands:
   version   Print the tidlr version
 
 Flags:
+  -v, -version    Print version (release tag, or for a dev build the commit
+                  date, short hash and the release it is based on) and exit.
   -config path    TOML config file (default config.toml)
   -since DATE     Scrape all albums added on/after DATE (DDMMYY or DD/MM/YYYY),
                   walking ADM's dated chart back in time. Without it, only the
                   recent "Just in" page is scraped.
   -force          Re-download albums already in the library, overwriting files.
+                  Applies to both the ADM queue and -album.
   -playlist URL   Download a Tidal playlist (URL or UUID) as ALAC into
                   <output_dir>/playlist/<name>/. Standalone; ignores other args.
   -album URL      Download a Tidal album (URL or ID) as ALAC into
-                  <output_dir>/<artist>/<album>/. Repeatable, and one value may
-                  list several space/comma-separated albums. Standalone; ignores
-                  other args.
+                  <output_dir>/<artist>/<album>/. Takes any number of URLs/IDs:
+                  repeat the flag, list them after it, or comma-separate them.
+                  Albums already downloaded this way are skipped unless -force
+                  is given. Standalone; ignores other args.
   -track URL      Download individual Tidal tracks (URLs or IDs, space/comma-
                   separated) as ALAC into <output_dir>/tracks/. Repeatable.
                   Standalone.
@@ -682,7 +940,9 @@ Examples:
   tidlr --force --since 010226 sync  # re-download that range from scratch
   tidlr --playlist https://tidal.com/playlist/f98d7491-...  # download a playlist
   tidlr --album https://tidal.com/album/540168117  # download a single album
-  tidlr --album 540168117 --album 522251328        # download several albums
+  tidlr --album 540168117 522251328 533982947      # several albums in one go
+  tidlr --album 540168117 --album 522251328        # the same, repeating the flag
+  tidlr --force --album 540168117                  # re-download one we already have
   tidlr --track https://tidal.com/track/113302335  # download a single track
 `)
 }

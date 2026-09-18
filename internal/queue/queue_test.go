@@ -250,3 +250,61 @@ var errTest = &testError{"boom"}
 type testError struct{ s string }
 
 func (e *testError) Error() string { return e.s }
+
+// TestTidalDownloads covers the --album library record: an album is not
+// "downloaded" until marked, lookups return what was stored, and marking is
+// idempotent (a --force re-download refreshes rather than duplicating).
+func TestTidalDownloads(t *testing.T) {
+	q := newTestQueue(t)
+
+	const albumID = 560221929
+	if have, err := q.IsTidalDownloaded(albumID); err != nil || have {
+		t.Fatalf("IsTidalDownloaded before mark = %v, %v; want false, nil", have, err)
+	}
+	if _, _, _, ok, err := q.TidalDownload(albumID); err != nil || ok {
+		t.Fatalf("TidalDownload before mark = ok %v, err %v; want false, nil", ok, err)
+	}
+
+	if err := q.MarkTidalDownloaded(albumID, "Carly Rae Jepsen", "Day and Night", "/music/CRJ/Day and Night"); err != nil {
+		t.Fatalf("MarkTidalDownloaded: %v", err)
+	}
+	have, err := q.IsTidalDownloaded(albumID)
+	if err != nil || !have {
+		t.Fatalf("IsTidalDownloaded after mark = %v, %v; want true, nil", have, err)
+	}
+	artist, album, dir, ok, err := q.TidalDownload(albumID)
+	if err != nil || !ok {
+		t.Fatalf("TidalDownload after mark = ok %v, err %v", ok, err)
+	}
+	if artist != "Carly Rae Jepsen" || album != "Day and Night" || dir != "/music/CRJ/Day and Night" {
+		t.Errorf("TidalDownload = %q, %q, %q", artist, album, dir)
+	}
+
+	// Re-marking (the --force path) updates in place.
+	if err := q.MarkTidalDownloaded(albumID, "Carly Rae Jepsen", "Day and Night", "/music/new"); err != nil {
+		t.Fatalf("re-mark: %v", err)
+	}
+	if _, _, dir, _, _ := q.TidalDownload(albumID); dir != "/music/new" {
+		t.Errorf("after re-mark dir = %q, want /music/new", dir)
+	}
+
+	// A different album id is unaffected.
+	if have, _ := q.IsTidalDownloaded(535577394); have {
+		t.Error("unrelated album id reported as downloaded")
+	}
+}
+
+// TestTidalDownloadsSeparateFromADM guards the id-space split: an ADM review id
+// and a Tidal album id that happen to be equal must not alias each other.
+func TestTidalDownloadsSeparateFromADM(t *testing.T) {
+	q := newTestQueue(t)
+
+	const id = 14619
+	if err := q.MarkDownloaded(id, "Aldous Harding", "Train On The Island", "/music/a"); err != nil {
+		t.Fatalf("MarkDownloaded: %v", err)
+	}
+	// The same number as a Tidal album id must still be "not downloaded".
+	if have, err := q.IsTidalDownloaded(id); err != nil || have {
+		t.Errorf("ADM review id leaked into Tidal library: have=%v err=%v", have, err)
+	}
+}

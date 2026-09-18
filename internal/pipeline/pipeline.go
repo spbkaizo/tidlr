@@ -26,6 +26,11 @@ type Pipeline struct {
 	DownloadWorkers int
 	ConvertWorkers  int
 
+	// QuietDownloadStart suppresses the per-album "downloading: …" line. Set it
+	// when a live progress display already announces each album, so the two do
+	// not print the same thing twice.
+	QuietDownloadStart bool
+
 	Log *log.Logger
 }
 
@@ -85,7 +90,9 @@ func (p *Pipeline) Run(ctx context.Context) error {
 
 func (p *Pipeline) runDownload(ctx context.Context, item queue.Item) (string, bool, bool) {
 	r := adm.Release{ReviewID: item.ReviewID, Artist: item.Artist, Album: item.Album, ReviewURL: item.ReviewURL}
-	p.logf("downloading: %s — %s", item.Artist, item.Album)
+	if !p.QuietDownloadStart {
+		p.logf("downloading: %s — %s", item.Artist, item.Album)
+	}
 
 	res, err := p.Downloader.Download(ctx, r)
 	if err != nil {

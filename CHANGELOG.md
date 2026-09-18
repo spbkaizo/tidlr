@@ -3,6 +3,102 @@
 All notable changes to `tidlr` are documented here. This project adheres to
 [Semantic Versioning](https://semver.org).
 
+## [1.9.0] — 2026-09-18
+
+### Added
+
+- **`-v` as a shorthand for `-version`**, and a fuller version banner. Release
+  builds report their tag as before; a development build now reports the
+  release it is based on plus the commit it was built from:
+
+  ```
+  tidlr dev (based on v1.8.0)
+    commit:  c8477c4 (2026-09-15)
+    go:      go1.27.1 darwin/arm64
+  ```
+
+  The commit hash and date come from the VCS stamp the Go toolchain embeds
+  automatically, so they need no build flags and cannot drift from the source.
+  The date is the *commit* time rather than the build time, so rebuilding the
+  same tree always reports the same version. A tree with uncommitted changes is
+  marked `-dirty`.
+
+  The base version is stamped via `-X main.baseVersion`; a new `Makefile`
+  (`make build`) reads it from `git describe --tags --abbrev=0`. A plain
+  `go build` still works and simply omits the "based on" clause.
+
+- **`tidlr version` no longer requires a readable config file.** It is answered
+  before the config and queue are opened, so it works on a fresh checkout.
+
+- **The live per-track download display now covers `run` and `sync`**, not just
+  `--album`. AnyDecentMusic downloads previously showed a single
+  `downloading: <artist> — <album>` line with no indication of progress within
+  the album; they now render the same per-track bars plus album-wide count:
+
+  ```
+  10:13:21 [3/24] downloading boygenius — the record ...
+    Without You Without Them                 [####----------------]
+    $20                                      [##########----------]
+    album [######--------------] 7/12 tracks
+  ```
+
+  The `[3/24]` prefix counts albums against the queue depth at the start of
+  the run.
+
+### Fixed
+
+- **`--album` now downloads every album given, not just the first.** Go's flag
+  package binds only the value immediately after `-album`, so in
+  `tidlr -album URL1 URL2 URL3` the second and subsequent URLs arrived as bare
+  positional arguments and were silently discarded — the run reported `[1/1]`
+  and fetched one album. Trailing arguments are now folded into the flag's
+  values, so all three forms work and are equivalent:
+
+  ```sh
+  tidlr --album URL1 URL2 URL3          # list them
+  tidlr --album URL1 --album URL2       # repeat the flag
+  tidlr --album "URL1,URL2"             # comma-separate
+  ```
+
+  The same fix applies to `--track`. Duplicate ids on one command line are now
+  fetched once.
+
+### Added
+
+- **`--album` skips albums it has already downloaded**, as the ADM queue
+  already did, reporting what it is skipping and where that album lives:
+
+  ```
+  [1/8] skipping album 560221929: already have "Carly Rae Jepsen" — "Day and
+  Night" at /Users/you/Music/tidlr/... (use -force to re-download)
+  ```
+
+  Pass `--force` to re-download and overwrite. Direct album downloads are
+  recorded in a new `tidal_downloads` table keyed by Tidal album id, kept
+  separate from the ADM `downloads` table (keyed by review id) because the two
+  id spaces are unrelated and a shared primary key could collide. Albums
+  downloaded before this release are not in the table, so the first fetch of
+  each after upgrading will re-download once and then be skipped thereafter.
+
+### Changed
+
+- **`run`/`sync` download albums serially while the progress display is on.**
+  The display owns a single terminal region and can only render one album, so
+  `progress = true` (the new default) overrides `download_workers`. This is a
+  deliberate throughput trade: per-album track concurrency (`download_threads`,
+  default 8) is unchanged and conversion still overlaps with downloading, but
+  fewer albums are in flight than the previous default of 3.
+
+  Set `progress = false` to restore full `download_workers` concurrency with
+  the old one-line-per-album logging. The display is also skipped automatically
+  on a non-TTY, so cron jobs and redirected output keep full concurrency with
+  no config change.
+
+- **Log lines emitted during a download now print above the live display**
+  rather than into it. Convert workers run concurrently with downloads and log
+  as they finish; previously such a line would have landed inside the drawn
+  region and been erased by the next redraw.
+
 ## [1.8.0] — 2026-09-15
 
 ### Security

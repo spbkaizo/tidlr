@@ -39,6 +39,13 @@ type Config struct {
 	// KeepFLAC, when true, delivers the source FLACs into the output library
 	// alongside the ALAC files. Default false. (cover.jpg is always delivered.)
 	KeepFLAC bool `toml:"keep_flac"`
+
+	// Progress, when true (the default), renders the live per-track download
+	// display during `run`/`sync`, the same one `-album` shows. The display can
+	// only draw one album at a time, so enabling it forces albums to download
+	// serially — set it false to keep DownloadWorkers albums in flight instead.
+	// It is a no-op on a non-TTY, where DownloadWorkers is honoured regardless.
+	Progress bool `toml:"progress"`
 }
 
 // Default returns a Config populated with the project's chosen defaults.
@@ -54,6 +61,7 @@ func Default() Config {
 		DownloadWorkers: 3,
 		ConvertWorkers:  4,
 		KeepFLAC:        false,
+		Progress:        true,
 	}
 }
 

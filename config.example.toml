@@ -23,6 +23,7 @@ quality = "max"
 download_threads = 8
 
 # How many albums to download concurrently (Tidal-bandwidth bound).
+# NOTE: ignored while progress = true (see below), which downloads serially.
 download_workers = 3
 # How many albums to convert concurrently (CPU bound; conversion is ~cheap).
 convert_workers = 4
@@ -31,3 +32,11 @@ convert_workers = 4
 # alongside the .m4a, for players that cannot read ALAC. (cover.jpg is always
 # delivered, whatever this is set to.)
 keep_flac = false
+
+# Show the live per-track download display during `run`/`sync` (the same one
+# `--album` shows). The display can only draw one album at a time, so turning it
+# on makes albums download SERIALLY, ignoring download_workers above — detail at
+# the cost of throughput. Set false to keep download_workers albums in flight
+# with plain one-line-per-album logging instead. Ignored on a non-TTY
+# (redirected output, cron), where download_workers always applies.
+progress = true

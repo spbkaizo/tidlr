@@ -98,6 +98,18 @@ func (q *Queue) migrate() error {
 			output_dir     TEXT NOT NULL DEFAULT '',
 			downloaded_at  TIMESTAMP NOT NULL
 		);
+
+		-- Permanent record of albums fetched directly by Tidal album id
+		-- (tidlr --album). Kept separate from the downloads table because that is
+		-- keyed by ADM review id: the two id spaces are unrelated and sharing a
+		-- primary key would let an ADM review id collide with a Tidal album id.
+		CREATE TABLE IF NOT EXISTS tidal_downloads (
+			album_id       INTEGER PRIMARY KEY,
+			artist         TEXT NOT NULL,
+			album          TEXT NOT NULL,
+			output_dir     TEXT NOT NULL DEFAULT '',
+			downloaded_at  TIMESTAMP NOT NULL
+		);
 	`)
 	return err
 }
@@ -138,6 +150,42 @@ func (q *Queue) MarkDownloaded(reviewID int, artist, album, outputDir string) er
 			artist=excluded.artist, album=excluded.album,
 			output_dir=excluded.output_dir, downloaded_at=excluded.downloaded_at`,
 		reviewID, artist, album, outputDir, time.Now().UTC())
+	return err
+}
+
+// IsTidalDownloaded reports whether a Tidal album id has already been fetched
+// via --album.
+func (q *Queue) IsTidalDownloaded(albumID int64) (bool, error) {
+	var n int
+	err := q.db.QueryRow(`SELECT COUNT(*) FROM tidal_downloads WHERE album_id = ?`, albumID).Scan(&n)
+	return n > 0, err
+}
+
+// TidalDownload returns the recorded artist/album/output dir for an already
+// downloaded Tidal album id, so callers can say what they are skipping. ok is
+// false when the id has not been downloaded.
+func (q *Queue) TidalDownload(albumID int64) (artist, album, outputDir string, ok bool, err error) {
+	row := q.db.QueryRow(
+		`SELECT artist, album, output_dir FROM tidal_downloads WHERE album_id = ?`, albumID)
+	switch err = row.Scan(&artist, &album, &outputDir); {
+	case errors.Is(err, sql.ErrNoRows):
+		return "", "", "", false, nil
+	case err != nil:
+		return "", "", "", false, err
+	}
+	return artist, album, outputDir, true, nil
+}
+
+// MarkTidalDownloaded records a directly-fetched Tidal album. Idempotent: a
+// re-download (e.g. via --force) refreshes the row.
+func (q *Queue) MarkTidalDownloaded(albumID int64, artist, album, outputDir string) error {
+	_, err := q.db.Exec(`
+		INSERT INTO tidal_downloads (album_id, artist, album, output_dir, downloaded_at)
+		VALUES (?, ?, ?, ?, ?)
+		ON CONFLICT(album_id) DO UPDATE SET
+			artist=excluded.artist, album=excluded.album,
+			output_dir=excluded.output_dir, downloaded_at=excluded.downloaded_at`,
+		albumID, artist, album, outputDir, time.Now().UTC())
 	return err
 }
 

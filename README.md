@@ -55,7 +55,21 @@ your `PATH` (it usually is). Verify:
 
 ```sh
 tidlr            # prints usage
+tidlr -v         # prints the version
 ```
+
+`go install` produces a development build, which reports the release it is
+based on alongside the commit it was built from:
+
+```
+tidlr dev (based on v1.8.0)
+  commit:  c8477c4 (2026-09-15)
+  go:      go1.27.1 darwin/arm64
+```
+
+To stamp that base version into a local build, use `make build` (which reads
+the last tag from git) rather than a bare `go build`. Binaries from the
+[releases page](../../releases) report their tag instead, e.g. `tidlr v1.8.0`.
 
 ---
 
@@ -65,8 +79,9 @@ tidlr            # prints usage
 # 1. Authenticate once (opens a Tidal device-authorization link)
 tidlr login
 
-# 2. Download a single album
+# 2. Download albums (any number; repeat the flag or just list them)
 tidlr --album https://tidal.com/album/540168117
+tidlr --album 540168117 522251328 533982947
 
 # 3. Download a playlist
 tidlr --playlist https://tidal.com/playlist/f98d7491-56e3-4b96-b536-60c1d2e5759e
@@ -88,7 +103,7 @@ Files land in `~/Music/tidlr/` by default. See the
 | Command / flag                | What it does                                                        |
 | ----------------------------- | ------------------------------------------------------------------- |
 | `tidlr login`                 | Authenticate with Tidal (device-code flow). Needed once.            |
-| `tidlr --album <url\|id ...>` | Download one or more albums into `<out>/<Artist>/<Album>/`.          |
+| `tidlr --album <url\|id ...>` | Download one or more albums into `<out>/<Artist>/<Album>/`. Skips ones already downloaded (`--force` overrides). |
 | `tidlr --playlist <url\|uuid>`| Download a playlist into `<out>/playlist/<name>/`.                   |
 | `tidlr --track <url\|id ...>` | Download one or more individual tracks into `<out>/tracks/`.        |
 | `tidlr sync`                  | Scrape new AnyDecentMusic releases, then download them.             |
@@ -96,8 +111,10 @@ Files land in `~/Music/tidlr/` by default. See the
 | `tidlr run`                   | Download everything currently queued.                               |
 | `tidlr retry`                 | Requeue failed items and run again.                                 |
 | `tidlr status`                | Show queue counts (pending / downloading / done / failed).          |
+| `tidlr -v`                    | Print the version, build commit and Go version.                     |
 
-Global flags: `--config <path>`, `--since <DDMMYY>`, `--force`.
+Global flags: `-v` / `--version`, `--config <path>`, `--since <DDMMYY>`,
+`--force`.
 
 ---
 
@@ -140,7 +157,35 @@ tidlr --album/--playlist ───►│              (search + artist catalogue
 output_dir = "~/Music/tidlr"   # where ALAC files land
 quality    = "max"             # low | normal | high | max  (max = HiRes lossless)
 keep_flac  = false             # true also puts the source FLACs in the library
+progress   = true              # live per-track display; downloads albums serially
 ```
+
+### Progress display vs. throughput
+
+`sync` and `run` show the same live per-track display as `--album`:
+
+```
+10:13:21 [3/24] downloading boygenius — the record ...
+  Without You Without Them                 [####----------------]
+  $20                                      [##########----------]
+  album [######--------------] 7/12 tracks
+```
+
+The display draws one album at a time, so `progress = true` (the default) makes
+albums download **serially**, overriding `download_workers`. Per-album track
+concurrency (`download_threads`, default 8) is unaffected, and conversion still
+overlaps with downloading — but fewer albums are in flight, so a large backlog
+takes longer.
+
+For an unattended catch-up over a big queue, prefer throughput:
+
+```sh
+tidlr --config <(sed 's/^progress = true/progress = false/' config.toml) sync
+```
+
+or simply set `progress = false` in `config.toml`. The display is skipped
+automatically when output is not a terminal (cron, redirected logs), so piping
+to a file always keeps full concurrency.
 
 See `config.example.toml` for all options and the
 **[User Guide](docs/USER_GUIDE.md)** for details.
