@@ -935,7 +935,10 @@ func mustOrganizer(cfg config.Config, logger *log.Logger, q *queue.Queue) *organ
 		LibraryDir: cfg.LibraryDir,
 		ReviewDir:  cfg.ReviewDir,
 		LocalDir:   home,
-		Log:        logger,
+
+		Merge:              cfg.GenreMerge,
+		KeepArtistTogether: cfg.KeepArtistTogether,
+		Log:                logger,
 	}
 	if cfg.LastFMAPIKey != "" {
 		o.LastFM = genre.NewLastFM(cfg.LastFMAPIKey)

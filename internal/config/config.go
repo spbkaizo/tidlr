@@ -64,23 +64,30 @@ type Config struct {
 	LastFMNGDefaults string `toml:"lastfmng_defaults"`
 	// AtomicParsleyBin writes the MusicBrainz tags (brew install atomicparsley).
 	AtomicParsleyBin string `toml:"atomicparsley_bin"`
+	// GenreMerge maps genre folders onto others, collapsing near duplicates
+	// ("Punk Rock" = "Punk").
+	GenreMerge map[string]string `toml:"genre_merge"`
+	// KeepArtistTogether files an album in the genre folder holding most of
+	// the artist's other albums, instead of its own computed genre. Default true.
+	KeepArtistTogether bool `toml:"keep_artist_together"`
 }
 
 // Default returns a Config populated with the project's chosen defaults.
 func Default() Config {
 	home, _ := os.UserHomeDir()
 	return Config{
-		OutputDir:        filepath.Join(home, "Music", "tidlr"),
-		WorkDir:          filepath.Join(home, ".local", "share", "tidlr"),
-		FFmpegBin:        "ffmpeg",
-		AuthFile:         "", // empty => tidal.DefaultAuthPath() (~/.tiddl/auth.json)
-		Quality:          "max",
-		DownloadThreads:  8,
-		DownloadWorkers:  3,
-		ConvertWorkers:   4,
-		KeepFLAC:         false,
-		Progress:         true,
-		AtomicParsleyBin: "AtomicParsley",
+		OutputDir:          filepath.Join(home, "Music", "tidlr"),
+		WorkDir:            filepath.Join(home, ".local", "share", "tidlr"),
+		FFmpegBin:          "ffmpeg",
+		AuthFile:           "", // empty => tidal.DefaultAuthPath() (~/.tiddl/auth.json)
+		Quality:            "max",
+		DownloadThreads:    8,
+		DownloadWorkers:    3,
+		ConvertWorkers:     4,
+		KeepFLAC:           false,
+		Progress:           true,
+		AtomicParsleyBin:   "AtomicParsley",
+		KeepArtistTogether: true,
 	}
 }
 

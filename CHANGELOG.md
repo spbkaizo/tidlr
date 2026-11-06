@@ -16,6 +16,9 @@ All notable changes to `tidlr` are documented here. This project adheres to
   Picard naming script. Albums that can't be identified, or are already in the
   library, are held in `review_dir` and listed by `tidlr status`.
 - New `review` queue state.
+- `genre_merge` collapses near-duplicate genre folders (e.g. Punk Rock into
+  Punk); `keep_artist_together` (default on) files an album with the
+  artist's other albums rather than splitting an artist across folders.
 - **`tidlr retag [DIR…]`** fixes the genre folder of albums already in the
   library (by default everything under `Archive */Unknown`): genre from the
   album's tags via Last.fm, then MusicBrainz; dry run unless `-apply`.

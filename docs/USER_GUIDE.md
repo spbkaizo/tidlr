@@ -310,6 +310,18 @@ tidlr -apply retag                           # do it
 tidlr -limit 20 retag "/Volumes/music/FLAC/Archive Albums/Indie"   # check a folder
 ```
 
+Two settings shape the choice of folder, for new downloads and `retag`
+alike:
+
+- `genre_merge` collapses near-duplicate genre folders, e.g.
+  `"Punk Rock" = "Punk"`, so albums stop moving between the two.
+- `keep_artist_together` (on by default) files an album with the artist's
+  other albums: the genre folder holding most of them wins over the album's
+  own genre (ties go to the album's genre, then its current folder). It also
+  rescues albums with no genre at all, when the artist has others filed.
+  Artists are matched by the `Artist - Year - Album` folder names; `Unknown`
+  and Various Artists compilations don't count.
+
 The report ends with how often the computed genre agreed with an album's
 current folder, a quick check against folders chosen earlier. Albums with no
 genre from either source stay where they are, and an existing folder is never

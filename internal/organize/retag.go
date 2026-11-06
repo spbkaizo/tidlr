@@ -21,7 +21,7 @@ type Retag struct {
 	NewDir   string // where it belongs; == Dir when the folder is right
 	Current  string // current genre folder name
 	Result   genre.Result
-	Source   string // "last.fm", "musicbrainz" or "" (no genre found)
+	Source   string // "last.fm", "musicbrainz", "artist" or "" (no genre found); "+artist" when that rule overrode it
 	Files    []string
 	SkipNote string // set when the album cannot be retagged, with the reason
 }
@@ -97,6 +97,18 @@ func (o *Organizer) PlanRetag(ctx context.Context, dir string) (Retag, error) {
 		// Leave the album alone rather than decide on partial information.
 		return plan, fmt.Errorf("Last.fm: %w", err)
 	}
+	o.loadArtists()
+	archive := filepath.Base(filepath.Dir(filepath.Dir(dir)))
+	if g, reason := o.decideGrouping(plan.Result.Grouping, archive, filepath.Base(dir), dir, plan.Current); g != plan.Result.Grouping {
+		plan.Result.Grouping = g
+		switch {
+		case reason != "artist":
+		case plan.Source == "":
+			plan.Source = "artist"
+		default:
+			plan.Source += "+artist"
+		}
+	}
 	grouping := orUnknown(plan.Result.Grouping)
 	if grouping != plan.Current {
 		plan.NewDir = filepath.Join(filepath.Dir(filepath.Dir(dir)), clean(grouping), filepath.Base(dir))
@@ -149,6 +161,9 @@ func (o *Organizer) ApplyRetag(ctx context.Context, plan Retag) error {
 	}
 	if err := os.Rename(plan.Dir, plan.NewDir); err != nil {
 		return err
+	}
+	if o.artists != nil {
+		o.artists.moved(plan.Dir, plan.NewDir)
 	}
 	os.Remove(filepath.Dir(plan.Dir)) // the old genre folder, if now empty
 	return nil

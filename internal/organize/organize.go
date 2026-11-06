@@ -14,6 +14,7 @@ import (
 	"path/filepath"
 	"sort"
 	"strings"
+	"sync"
 
 	"github.com/simonb/tidlr/internal/filing"
 	"github.com/simonb/tidlr/internal/genre"
@@ -35,6 +36,16 @@ type Organizer struct {
 	// LocalDir is a folder on the local disk (the home folder); a library
 	// under /Volumes on the same disk means its share is not mounted.
 	LocalDir string
+
+	// Merge maps genre folders onto others ("Punk Rock" -> "Punk"), so near
+	// duplicates collapse into one folder.
+	Merge map[string]string
+	// KeepArtistTogether files an album with the artist's other albums: the
+	// genre folder holding most of them wins over the computed genre.
+	KeepArtistTogether bool
+
+	artists     *artistIndex
+	artistsOnce sync.Once
 
 	Log *log.Logger
 }
@@ -99,6 +110,7 @@ func (o *Organizer) Organize(ctx context.Context, a Album) (string, error) {
 	o.logf("genre: %s (%s)", orUnknown(g.Grouping), strings.Join(g.Genres, ", "))
 
 	// Folder names use the tag values as written (punctuation converted).
+	o.loadArtists()
 	fa := filing.Album{
 		AlbumArtist:  tagger.ASCIIPunct(musicbrainz.CreditName(r.ArtistCredit)),
 		Title:        tagger.ASCIIPunct(r.Title),
@@ -108,6 +120,15 @@ func (o *Organizer) Organize(ctx context.Context, a Album) (string, error) {
 		Date:         r.Date,
 		TotalDiscs:   len(r.Media),
 	}
+	// Merged genres and the artist's other albums can override the genre.
+	name := filepath.Base(filing.AlbumDir(fa))
+	if grouping, reason := o.decideGrouping(g.Grouping, filing.Subdir(fa), name, "", ""); grouping != g.Grouping {
+		if reason == "artist" {
+			o.logf("filing with the artist's other albums in %s (genre says %s)", grouping, orUnknown(g.Grouping))
+		}
+		g.Grouping, fa.Grouping = grouping, grouping
+	}
+
 	var moves []filing.Move
 	for i, tr := range tracks {
 		tags, err := tagger.FromRelease(r, i, g, tagger.Source{
@@ -136,6 +157,9 @@ func (o *Organizer) Organize(ctx context.Context, a Album) (string, error) {
 			return o.review(a, "already in the library at "+dest)
 		}
 		return "", err
+	}
+	if o.artists != nil {
+		o.artists.add(dest)
 	}
 	removeDir(a.Dir)
 	return dest, nil

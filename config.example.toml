@@ -65,3 +65,13 @@ progress = true
 #lastfmng_defaults = "~/Library/Preferences/MusicBrainz/Picard/plugins/lastfmng/defaults.ini"
 
 #atomicparsley_bin = "AtomicParsley"
+
+# Collapse near-duplicate genre folders: albums whose genre is the key are
+# filed under the value instead (and retag moves them there).
+#[genre_merge]
+#"Punk Rock" = "Punk"
+
+# File an album with the artist's other albums: the genre folder holding most
+# of them wins over the album's own genre. Unknown is ignored, as are Various
+# Artists compilations.
+#keep_artist_together = true
