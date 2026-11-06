@@ -122,7 +122,7 @@ func (o *Organizer) Organize(ctx context.Context, a Album) (string, error) {
 	}
 	// Merged genres and the artist's other albums can override the genre.
 	name := filepath.Base(filing.AlbumDir(fa))
-	if grouping, reason := o.decideGrouping(g.Grouping, filing.Subdir(fa), name, "", ""); grouping != g.Grouping {
+	if grouping, reason := o.decideGrouping(g, filing.Subdir(fa), name, "", ""); grouping != g.Grouping {
 		if reason == "artist" {
 			o.logf("filing with the artist's other albums in %s (genre says %s)", grouping, orUnknown(g.Grouping))
 		}

@@ -71,7 +71,8 @@ progress = true
 #[genre_merge]
 #"Punk Rock" = "Punk"
 
-# File an album with the artist's other albums: the genre folder holding most
-# of them wins over the album's own genre. Unknown is ignored, as are Various
-# Artists compilations.
+# File an album with the artist's other albums: among the artist's folders
+# that are also one of the album's own genres, the one holding most of their
+# albums wins. Niche albums stay in niche folders unless tagged otherwise.
+# Unknown is ignored, as are Various Artists compilations.
 #keep_artist_together = true

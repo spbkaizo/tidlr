@@ -67,8 +67,8 @@ type Config struct {
 	// GenreMerge maps genre folders onto others, collapsing near duplicates
 	// ("Punk Rock" = "Punk").
 	GenreMerge map[string]string `toml:"genre_merge"`
-	// KeepArtistTogether files an album in the genre folder holding most of
-	// the artist's other albums, instead of its own computed genre. Default true.
+	// KeepArtistTogether files an album with the artist's other albums when
+	// their folder is also one of the album's own genres. Default true.
 	KeepArtistTogether bool `toml:"keep_artist_together"`
 }
 

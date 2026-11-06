@@ -316,9 +316,11 @@ alike:
 - `genre_merge` collapses near-duplicate genre folders, e.g.
   `"Punk Rock" = "Punk"`, so albums stop moving between the two.
 - `keep_artist_together` (on by default) files an album with the artist's
-  other albums: the genre folder holding most of them wins over the album's
-  own genre (ties go to the album's genre, then its current folder). It also
-  rescues albums with no genre at all, when the artist has others filed.
+  other albums, gently: among the artist's folders that are also one of the
+  album's own genres, the one holding most of their albums wins (ties go to
+  the album's genre, then its current folder). So a jungle album by an artist
+  mostly filed under Electronic stays in Jungle unless the album itself is
+  tagged electronic. An album with no genre at all joins its artist's folder.
   Artists are matched by the `Artist - Year - Album` folder names; `Unknown`
   and Various Artists compilations don't count.
 

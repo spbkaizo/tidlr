@@ -99,7 +99,7 @@ func (o *Organizer) PlanRetag(ctx context.Context, dir string) (Retag, error) {
 	}
 	o.loadArtists()
 	archive := filepath.Base(filepath.Dir(filepath.Dir(dir)))
-	if g, reason := o.decideGrouping(plan.Result.Grouping, archive, filepath.Base(dir), dir, plan.Current); g != plan.Result.Grouping {
+	if g, reason := o.decideGrouping(plan.Result, archive, filepath.Base(dir), dir, plan.Current); g != plan.Result.Grouping {
 		plan.Result.Grouping = g
 		switch {
 		case reason != "artist":

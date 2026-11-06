@@ -9,6 +9,7 @@ import (
 	"sync"
 
 	"github.com/simonb/tidlr/internal/filing"
+	"github.com/simonb/tidlr/internal/genre"
 )
 
 // albumDirRe splits an album folder name into its artist part.
@@ -116,20 +117,38 @@ func (o *Organizer) merged(genre string) string {
 	return genre
 }
 
-// decideGrouping turns the computed grouping into the folder the album goes
-// in: merged genres are mapped onto their target, then, with
-// KeepArtistTogether, an artist with other albums in the archive keeps them
-// together in the folder holding most of them. On a tie the computed genre
-// wins, then current (the album's present folder, "" for a new album).
-// reason is "artist" when that rule decided, else "".
-func (o *Organizer) decideGrouping(computed, archive, albumName, albumDir, current string) (grouping, reason string) {
-	grouping = o.merged(computed)
+// decideGrouping turns an album's genre result into the folder it goes in.
+// Merged genres are mapped onto their target. Then, with KeepArtistTogether,
+// an artist with other albums in the archive keeps them together — gently:
+// only folders that are also among the album's own genres (its grouping or
+// genre tags) are eligible, so a jungle album by an artist mostly filed under
+// Electronic stays in Jungle unless the album itself is tagged electronic.
+// An album with no genre at all may join any of the artist's folders. Among
+// eligible folders the one holding most of the artist's albums wins; ties go
+// to the computed genre, then current (the album's present folder, "" for a
+// new album). reason is "artist" when that rule changed the folder.
+func (o *Organizer) decideGrouping(res genre.Result, archive, albumName, albumDir, current string) (grouping, reason string) {
+	grouping = o.merged(res.Grouping)
 	if !o.KeepArtistTogether || o.artists == nil {
 		return grouping, ""
 	}
 	counts := o.artists.artistFolders(archive, albumName, albumDir, o.merged)
 	if len(counts) == 0 {
 		return grouping, ""
+	}
+	if res.Grouping != "" || len(res.Genres) > 0 {
+		own := map[string]bool{genreKey(grouping): true}
+		for _, g := range res.Genres {
+			own[genreKey(o.merged(g))] = true
+		}
+		for g := range counts {
+			if !own[genreKey(g)] {
+				delete(counts, g)
+			}
+		}
+		if len(counts) == 0 {
+			return grouping, ""
+		}
 	}
 	best := 0
 	for _, n := range counts {
@@ -150,6 +169,19 @@ func (o *Organizer) decideGrouping(computed, archive, albumName, albumDir, curre
 		}
 	}
 	return top[0], reasonIf(top[0] != grouping)
+}
+
+// genreKey compares genre names loosely: case, "&" vs "and", punctuation
+// ("Drum & Bass" = "drum and bass", "Hip-Hop" = "hip hop").
+func genreKey(s string) string {
+	s = strings.ToLower(strings.ReplaceAll(s, "&", " and "))
+	var b strings.Builder
+	for _, r := range s {
+		if (r >= 'a' && r <= 'z') || (r >= '0' && r <= '9') {
+			b.WriteRune(r)
+		}
+	}
+	return b.String()
 }
 
 func reasonIf(changed bool) string {
