@@ -81,7 +81,8 @@ func (o *Organizer) PlanRetag(ctx context.Context, dir string) (Retag, error) {
 		return plan, nil
 	}
 
-	plan.Result, plan.Source = o.genreFor(ctx, ga, func() []musicbrainz.Genre {
+	var err error
+	plan.Result, plan.Source, err = o.genreFor(ctx, ga, func() []musicbrainz.Genre {
 		if albumID == "" {
 			return nil
 		}
@@ -91,7 +92,11 @@ func (o *Organizer) PlanRetag(ctx context.Context, dir string) (Retag, error) {
 			return nil
 		}
 		return append(r.ReleaseGroup.Genres, r.Genres...)
-	})
+	}, true)
+	if err != nil {
+		// Leave the album alone rather than decide on partial information.
+		return plan, fmt.Errorf("Last.fm: %w", err)
+	}
 	grouping := orUnknown(plan.Result.Grouping)
 	if grouping != plan.Current {
 		plan.NewDir = filepath.Join(filepath.Dir(filepath.Dir(dir)), clean(grouping), filepath.Base(dir))

@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"net/url"
 	"strconv"
+	"strings"
 	"sync"
 	"time"
 )
@@ -87,7 +88,8 @@ func (c *LastFM) TopTags(ctx context.Context, method string, args map[string]str
 	}
 	resp, err := c.HTTP.Do(req)
 	if err != nil {
-		return nil, err
+		// The URL in a transport error carries the API key: don't log it.
+		return nil, fmt.Errorf("last.fm %s: %s", method, redactKey(err.Error(), c.APIKey))
 	}
 	defer resp.Body.Close()
 	var body struct {
@@ -133,6 +135,13 @@ func (c *LastFM) remember(key string, tags []Tag) {
 		c.cache = map[string][]Tag{}
 	}
 	c.cache[key] = tags
+}
+
+func redactKey(s, key string) string {
+	if key == "" {
+		return s
+	}
+	return strings.ReplaceAll(s, key, "<api_key>")
 }
 
 func trimQuotes(b []byte) []byte {

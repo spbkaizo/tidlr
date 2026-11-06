@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"net/http"
+	"net/http/httptest"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -181,5 +182,29 @@ func TestRetagUnknownAlbum(t *testing.T) {
 	tags, _ := o.Tagger.Read(context.Background(), filepath.Join(filed, "05 - Islands of Men.m4a"))
 	if tags["albumgrouping"] != "Psychedelic Rock" || tags["©grp"] != "Psychedelic Rock" {
 		t.Errorf("grouping tags = %q / %q", tags["albumgrouping"], tags["©grp"])
+	}
+}
+
+// A Last.fm outage must not change a filed album's genre: retag reports an
+// error and leaves the album alone instead of falling back to MusicBrainz.
+func TestRetagLeavesAlbumOnLastFMError(t *testing.T) {
+	o := organizer(t)
+	filed, err := o.Organize(context.Background(), downloaded(t, "440082667"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	down := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		http.Error(w, "unavailable", http.StatusServiceUnavailable)
+	}))
+	defer down.Close()
+	o.LastFM = genre.NewLastFM("secret-key")
+	o.LastFM.BaseURL, o.LastFM.Interval = down.URL, 1
+
+	plan, err := o.PlanRetag(context.Background(), filed)
+	if err == nil {
+		t.Fatalf("plan = %+v, want an error", plan)
+	}
+	if strings.Contains(err.Error(), "secret-key") {
+		t.Errorf("error leaks the API key: %v", err)
 	}
 }

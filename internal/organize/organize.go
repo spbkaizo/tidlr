@@ -152,21 +152,30 @@ func (o *Organizer) genre(ctx context.Context, r musicbrainz.Release) genre.Resu
 		}
 		ga.Tracks = append(ga.Tracks, genre.Track{Artist: musicbrainz.CreditName(credit), Title: t.Title})
 	}
-	g, _ := o.genreFor(ctx, ga, func() []musicbrainz.Genre { return append(r.ReleaseGroup.Genres, r.Genres...) })
+	mbGenres := func() []musicbrainz.Genre { return append(r.ReleaseGroup.Genres, r.Genres...) }
+	g, _, err := o.genreFor(ctx, ga, mbGenres, true)
+	if err != nil {
+		// A new album must be filed somewhere: go on with MusicBrainz genres.
+		o.logf("warning: Last.fm genres: %v; using MusicBrainz genres", err)
+		g, _, _ = o.genreFor(ctx, ga, mbGenres, false)
+	}
 	return g
 }
 
 // genreFor runs Last.fm for ga, then falls back to the MusicBrainz genres
 // mbGenres returns (called only if needed). source says which decided the
 // grouping: "last.fm", "musicbrainz" or "" when neither had one.
-func (o *Organizer) genreFor(ctx context.Context, ga genre.Album, mbGenres func() []musicbrainz.Genre) (g genre.Result, source string) {
-	if o.LastFM != nil {
-		var err error
+//
+// A Last.fm failure (as opposed to Last.fm having no tags) is returned as an
+// error rather than quietly falling back: a network blip must not change an
+// album's genre. Callers that must decide anyway retry with useLastFM false.
+func (o *Organizer) genreFor(ctx context.Context, ga genre.Album, mbGenres func() []musicbrainz.Genre, useLastFM bool) (g genre.Result, source string, err error) {
+	if o.LastFM != nil && useLastFM {
 		if g, err = o.Lists.ForAlbum(ctx, o.LastFM, ga); err != nil {
-			o.logf("warning: Last.fm genres: %v; using MusicBrainz genres", err)
+			return genre.Result{}, "", err
 		}
 		if g.Grouping != "" {
-			return g, "last.fm"
+			return g, "last.fm", nil
 		}
 	}
 	var tags []genre.Tag
@@ -181,7 +190,7 @@ func (o *Organizer) genreFor(ctx context.Context, ga genre.Album, mbGenres func(
 	if g.Grouping != "" {
 		source = "musicbrainz"
 	}
-	return g, source
+	return g, source, nil
 }
 
 // review moves the album folder to the review area and reports why.
