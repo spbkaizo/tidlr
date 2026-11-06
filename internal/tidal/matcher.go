@@ -114,18 +114,22 @@ type Matcher struct {
 // search endpoint frequently hides behind a Dolby Atmos edition. Returns
 // ErrNoMatch when nothing clears the confidence bar.
 func (m *Matcher) Match(ctx context.Context, wantArtist, wantTitle string) (Match, error) {
-	res, err := m.Client.Search(ctx, wantArtist+" "+wantTitle)
-	if err != nil {
-		return Match{}, err
-	}
-
 	var matched *Album
 	var best float64
-	for i := range res.Albums.Items {
-		s := nameScore(res.Albums.Items[i], wantArtist, wantTitle)
-		if matched == nil || s > best {
-			matched = &res.Albums.Items[i]
-			best = s
+	for _, query := range searchQueries(wantArtist, wantTitle) {
+		res, err := m.Client.Search(ctx, query)
+		if err != nil {
+			return Match{}, err
+		}
+		for i := range res.Albums.Items {
+			s := nameScore(res.Albums.Items[i], wantArtist, wantTitle)
+			if matched == nil || s > best {
+				matched = &res.Albums.Items[i]
+				best = s
+			}
+		}
+		if matched != nil && best >= minScore {
+			break
 		}
 	}
 	if matched == nil || best < minScore {
@@ -145,6 +149,22 @@ func (m *Matcher) Match(ctx context.Context, wantArtist, wantTitle string) (Matc
 		FromSearchID: matched.ID,
 		Upgraded:     chosen.ID != matched.ID,
 	}, nil
+}
+
+// shortTitleWords is how many title words the fallback search keeps.
+const shortTitleWords = 4
+
+// searchQueries returns the queries to try in turn: "artist title", then, for a
+// long title, "artist" plus its first few words. Tidal's search returns nothing
+// at all for a very long query (Fiona Apple's 23-word "The Idler Wheel…"),
+// while a few words find it; candidates are still scored against the full
+// title, so the shorter query cannot loosen the match.
+func searchQueries(artist, title string) []string {
+	queries := []string{artist + " " + title}
+	if words := strings.Fields(title); len(words) > shortTitleWords {
+		queries = append(queries, artist+" "+strings.Join(words[:shortTitleWords], " "))
+	}
+	return queries
 }
 
 // bestEdition enumerates the matched album's artist catalogue and returns the

@@ -79,3 +79,18 @@ func TestReleaseTime(t *testing.T) {
 		t.Error("empty releaseDate should give zero time")
 	}
 }
+
+func TestSearchQueries(t *testing.T) {
+	got := searchQueries("Fiona Apple", "The Idler Wheel Is Wiser Than The Driver Of The Screw")
+	want := []string{
+		"Fiona Apple The Idler Wheel Is Wiser Than The Driver Of The Screw",
+		"Fiona Apple The Idler Wheel Is",
+	}
+	if len(got) != len(want) || got[0] != want[0] || got[1] != want[1] {
+		t.Errorf("long title: got %q, want %q", got, want)
+	}
+	// A short title needs no fallback.
+	if got := searchQueries("Geese", "Getting Killed"); len(got) != 1 || got[0] != "Geese Getting Killed" {
+		t.Errorf("short title: got %q", got)
+	}
+}
