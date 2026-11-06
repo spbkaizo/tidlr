@@ -1,0 +1,191 @@
+{
+ "album": {
+  "id": 409386860,
+  "title": "DeBÍ TiRAR MáS FOToS",
+  "artist": {
+   "id": 8027279,
+   "name": "Bad Bunny",
+   "handle": null,
+   "type": "MAIN",
+   "picture": "860038f2-c3e1-4df6-a62e-ead97285672e"
+  },
+  "numberOfTracks": 17,
+  "numberOfVolumes": 1,
+  "releaseDate": "2025-01-05",
+  "upc": "199066342442"
+ },
+ "items": {
+  "items": [
+   {
+    "item": {
+     "id": 409386861,
+     "title": "NUEVAYoL",
+     "trackNumber": 1,
+     "volumeNumber": 1,
+     "duration": 184,
+     "isrc": "QMFMF2447055"
+    }
+   },
+   {
+    "item": {
+     "id": 409386862,
+     "title": "VOY A LLeVARTE PA PR",
+     "trackNumber": 2,
+     "volumeNumber": 1,
+     "duration": 156,
+     "isrc": "QMFMF2447056"
+    }
+   },
+   {
+    "item": {
+     "id": 409386863,
+     "title": "BAILE INoLVIDABLE",
+     "trackNumber": 3,
+     "volumeNumber": 1,
+     "duration": 368,
+     "isrc": "QMFMF2447057"
+    }
+   },
+   {
+    "item": {
+     "id": 409386864,
+     "title": "PERFuMITO NUEVO",
+     "trackNumber": 4,
+     "volumeNumber": 1,
+     "duration": 201,
+     "isrc": "QMFMF2447058"
+    }
+   },
+   {
+    "item": {
+     "id": 409386865,
+     "title": "WELTiTA",
+     "trackNumber": 5,
+     "volumeNumber": 1,
+     "duration": 188,
+     "isrc": "QMFMF2447059"
+    }
+   },
+   {
+    "item": {
+     "id": 409386866,
+     "title": "VeLDÁ",
+     "trackNumber": 6,
+     "volumeNumber": 1,
+     "duration": 235,
+     "isrc": "QMFMF2447060"
+    }
+   },
+   {
+    "item": {
+     "id": 409386867,
+     "title": "EL CLúB",
+     "trackNumber": 7,
+     "volumeNumber": 1,
+     "duration": 223,
+     "isrc": "QMFME2462255"
+    }
+   },
+   {
+    "item": {
+     "id": 409386868,
+     "title": "KETU TeCRÉ",
+     "trackNumber": 8,
+     "volumeNumber": 1,
+     "duration": 251,
+     "isrc": "QMFMF2447062"
+    }
+   },
+   {
+    "item": {
+     "id": 409386869,
+     "title": "BOKeTE",
+     "trackNumber": 9,
+     "volumeNumber": 1,
+     "duration": 216,
+     "isrc": "QMFMF2447063"
+    }
+   },
+   {
+    "item": {
+     "id": 409386870,
+     "title": "KLOuFRENS",
+     "trackNumber": 10,
+     "volumeNumber": 1,
+     "duration": 199,
+     "isrc": "QMFMF2447064"
+    }
+   },
+   {
+    "item": {
+     "id": 409386871,
+     "title": "TURiSTA",
+     "trackNumber": 11,
+     "volumeNumber": 1,
+     "duration": 190,
+     "isrc": "QMFMF2447065"
+    }
+   },
+   {
+    "item": {
+     "id": 409386872,
+     "title": "CAFé CON RON",
+     "trackNumber": 12,
+     "volumeNumber": 1,
+     "duration": 229,
+     "isrc": "QMFMF2447066"
+    }
+   },
+   {
+    "item": {
+     "id": 409386873,
+     "title": "PIToRRO DE COCO",
+     "trackNumber": 13,
+     "volumeNumber": 1,
+     "duration": 207,
+     "isrc": "QMFMF2447067"
+    }
+   },
+   {
+    "item": {
+     "id": 409386874,
+     "title": "LO QUE LE PASÓ A HAWAii",
+     "trackNumber": 14,
+     "volumeNumber": 1,
+     "duration": 229,
+     "isrc": "QMFMF2447068"
+    }
+   },
+   {
+    "item": {
+     "id": 409386875,
+     "title": "EoO",
+     "trackNumber": 15,
+     "volumeNumber": 1,
+     "duration": 205,
+     "isrc": "QMFMF2447069"
+    }
+   },
+   {
+    "item": {
+     "id": 409386876,
+     "title": "DtMF",
+     "trackNumber": 16,
+     "volumeNumber": 1,
+     "duration": 237,
+     "isrc": "QMFMF2447070"
+    }
+   },
+   {
+    "item": {
+     "id": 409386877,
+     "title": "LA MuDANZA",
+     "trackNumber": 17,
+     "volumeNumber": 1,
+     "duration": 213,
+     "isrc": "QMFMF2447071"
+    }
+   }
+  ]
+ }
+}

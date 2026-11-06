@@ -16,10 +16,12 @@ package main
 
 import (
 	"context"
+	"errors"
 	"flag"
 	"fmt"
 	"log"
 	"os"
+	"os/exec"
 	"os/signal"
 	"path/filepath"
 	"regexp"
@@ -37,8 +39,12 @@ import (
 	"github.com/simonb/tidlr/internal/config"
 	"github.com/simonb/tidlr/internal/convert"
 	"github.com/simonb/tidlr/internal/downloader"
+	"github.com/simonb/tidlr/internal/genre"
+	"github.com/simonb/tidlr/internal/musicbrainz"
+	"github.com/simonb/tidlr/internal/organize"
 	"github.com/simonb/tidlr/internal/pipeline"
 	"github.com/simonb/tidlr/internal/queue"
+	"github.com/simonb/tidlr/internal/tagger"
 	"github.com/simonb/tidlr/internal/tidal"
 )
 
@@ -376,6 +382,7 @@ func mustRun(ctx context.Context, cfg config.Config, q *queue.Queue) {
 		DownloadWorkers:    downloadWorkers,
 		QuietDownloadStart: quietDownloadStart,
 		ConvertWorkers:     cfg.ConvertWorkers,
+		Organizer:          mustOrganizer(cfg, runLog),
 		Log:                runLog,
 	}
 	if err := p.Run(ctx); err != nil && ctx.Err() == nil {
@@ -718,6 +725,7 @@ func mustAlbum(ctx context.Context, cfg config.Config, arg string, force bool) {
 	client := authedClient(ctx, cfg)
 	dl := &tidal.Downloader{Client: client, FFmpegBin: cfg.FFmpegBin, Threads: cfg.DownloadThreads, Log: log.Default()}
 	conv := &convert.Converter{FFmpegBin: cfg.FFmpegBin, OutputDir: cfg.OutputDir, KeepFLAC: cfg.KeepFLAC}
+	org := mustOrganizer(cfg, log.Default())
 	scratch := filepath.Join(cfg.DownloadDir(), "album")
 	if err := os.MkdirAll(scratch, 0o755); err != nil {
 		log.Fatalf("scratch dir: %v", err)
@@ -740,7 +748,7 @@ func mustAlbum(ctx context.Context, cfg config.Config, arg string, force bool) {
 			}
 		}
 		log.Printf("[%d/%d] downloading album %d ...", i+1, len(ids), albumID)
-		out, artist, album, err := downloadOneAlbum(ctx, cfg, dl, conv, scratch, albumID)
+		out, artist, album, err := downloadOneAlbum(ctx, cfg, dl, conv, org, scratch, albumID)
 		if err != nil {
 			failed++
 			log.Printf("[%d/%d] FAILED album %d: %v", i+1, len(ids), albumID, err)
@@ -777,7 +785,7 @@ func dedupeIDs(ids []int64) []int64 {
 
 // downloadOneAlbum downloads and converts a single album; errors are returned
 // (not fatal) so a batch can continue.
-func downloadOneAlbum(ctx context.Context, cfg config.Config, dl *tidal.Downloader, conv *convert.Converter, scratch string, albumID int64) (outDir, artist, albumName string, err error) {
+func downloadOneAlbum(ctx context.Context, cfg config.Config, dl *tidal.Downloader, conv *convert.Converter, org *organize.Organizer, scratch string, albumID int64) (outDir, artist, albumName string, err error) {
 	prog := newAlbumProgress(dl.Threads)
 	dl.OnAlbumStart = prog.onAlbumStart
 	dl.OnTrackStart = prog.onTrackStart
@@ -794,8 +802,69 @@ func downloadOneAlbum(ctx context.Context, cfg config.Config, dl *tidal.Download
 		return "", "", "", err
 	}
 	os.RemoveAll(res.Dir)
+	if org != nil {
+		dest, err := org.Organize(ctx, organize.Album{Dir: out, Tidal: res.Album, Tracks: res.TrackList})
+		var rev *organize.ReviewError
+		switch {
+		case errors.As(err, &rev):
+			// Downloaded but not filed: report it, and count it as had so a
+			// rerun does not fetch it again.
+			log.Printf("review: album %q — %q: %s (at %s)", artist, albumName, rev.Reason, rev.Dir)
+			return rev.Dir, artist, albumName, nil
+		case err != nil:
+			return "", "", "", fmt.Errorf("filing: %w (album left at %s)", err, out)
+		}
+		out = dest
+	}
 	log.Printf("done: album %q — %q -> %s", artist, albumName, out)
 	return out, artist, albumName, nil
+}
+
+// mustOrganizer builds the MusicBrainz tagger and filer from the config, or
+// returns nil when library_dir is unset (albums stay in output_dir as before).
+// It refuses to start when the library or AtomicParsley is missing, so a
+// batch never runs only to fail every album at the end.
+func mustOrganizer(cfg config.Config, logger *log.Logger) *organize.Organizer {
+	if cfg.LibraryDir == "" {
+		return nil
+	}
+	if fi, err := os.Stat(cfg.LibraryDir); err != nil || !fi.IsDir() {
+		log.Fatalf("library_dir %s is not reachable (is the share mounted?)", cfg.LibraryDir)
+	}
+	if _, err := exec.LookPath(cfg.AtomicParsleyBin); err != nil {
+		log.Fatalf("library_dir needs AtomicParsley to write tags: brew install atomicparsley (%v)", err)
+	}
+	lists, err := genre.Load(cfg.LastFMNGDefaults)
+	if err != nil {
+		logger.Printf("lastfmng genre lists not found (%v); using the built-in ID3 genre list", err)
+		lists = genre.Builtin()
+	}
+	o := &organize.Organizer{
+		MB:         musicbrainz.New("tidlr", appVersion()),
+		Prefs:      musicbrainz.DefaultPrefs,
+		Lists:      lists,
+		Tagger:     tagger.Writer{Bin: cfg.AtomicParsleyBin},
+		LibraryDir: cfg.LibraryDir,
+		ReviewDir:  cfg.ReviewDir,
+		Log:        logger,
+	}
+	if cfg.LastFMAPIKey != "" {
+		o.LastFM = genre.NewLastFM(cfg.LastFMAPIKey)
+	} else {
+		logger.Printf("no lastfm_api_key: genre folders come from MusicBrainz genres")
+	}
+	return o
+}
+
+// appVersion is the short version for User-Agent strings.
+func appVersion() string {
+	switch {
+	case version != "":
+		return version
+	case baseVersion != "":
+		return baseVersion + "-dev"
+	}
+	return "dev"
 }
 
 // mustTrack downloads one or more individual Tidal tracks (space/comma-separated
@@ -888,7 +957,7 @@ func mustStatus(q *queue.Queue) {
 	// state would silently vanish from the count.
 	order := []queue.State{
 		queue.StatePending, queue.StateDownloading, queue.StateConverting,
-		queue.StateDone, queue.StateFailed, queue.StateSkipped,
+		queue.StateDone, queue.StateFailed, queue.StateSkipped, queue.StateReview,
 	}
 	fmt.Println("queue:")
 	total := 0
@@ -897,6 +966,17 @@ func mustStatus(q *queue.Queue) {
 		total += counts[s]
 	}
 	fmt.Printf("  %-12s %d\n", "total", total)
+
+	review, err := q.InState(queue.StateReview)
+	if err != nil {
+		log.Fatalf("status: %v", err)
+	}
+	if len(review) > 0 {
+		fmt.Println("\nheld for review:")
+		for _, it := range review {
+			fmt.Printf("  %s — %s\n    %s\n", it.Artist, it.Album, it.LastError)
+		}
+	}
 }
 
 func usage() {

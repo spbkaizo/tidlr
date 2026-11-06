@@ -1,0 +1,201 @@
+{
+ "album": {
+  "id": 111388551,
+  "title": "Have One On Me",
+  "artist": {
+   "id": 3833069,
+   "name": "Joanna Newsom",
+   "handle": null,
+   "type": "MAIN",
+   "picture": "5c6f47a4-c5ba-4973-842c-adeb8787e448"
+  },
+  "numberOfTracks": 18,
+  "numberOfVolumes": 3,
+  "releaseDate": "2010-02-23",
+  "upc": "781484039020"
+ },
+ "items": {
+  "items": [
+   {
+    "item": {
+     "id": 111388552,
+     "title": "Easy",
+     "trackNumber": 1,
+     "volumeNumber": 1,
+     "duration": 364,
+     "isrc": "US58L1039001"
+    }
+   },
+   {
+    "item": {
+     "id": 111388553,
+     "title": "Have One On Me",
+     "trackNumber": 2,
+     "volumeNumber": 1,
+     "duration": 662,
+     "isrc": "US58L1039002"
+    }
+   },
+   {
+    "item": {
+     "id": 111388554,
+     "title": "81",
+     "trackNumber": 3,
+     "volumeNumber": 1,
+     "duration": 232,
+     "isrc": "US58L1039003"
+    }
+   },
+   {
+    "item": {
+     "id": 111388555,
+     "title": "Good Intentions Paving Company",
+     "trackNumber": 4,
+     "volumeNumber": 1,
+     "duration": 422,
+     "isrc": "US58L1039004"
+    }
+   },
+   {
+    "item": {
+     "id": 111388556,
+     "title": "No Provenance",
+     "trackNumber": 5,
+     "volumeNumber": 1,
+     "duration": 385,
+     "isrc": "US58L1039005"
+    }
+   },
+   {
+    "item": {
+     "id": 111388557,
+     "title": "Baby Birch",
+     "trackNumber": 6,
+     "volumeNumber": 1,
+     "duration": 570,
+     "isrc": "US58L1039006"
+    }
+   },
+   {
+    "item": {
+     "id": 111388558,
+     "title": "On A Good Day",
+     "trackNumber": 1,
+     "volumeNumber": 2,
+     "duration": 109,
+     "isrc": "US58L1039007"
+    }
+   },
+   {
+    "item": {
+     "id": 111388559,
+     "title": "You And Me, Bess",
+     "trackNumber": 2,
+     "volumeNumber": 2,
+     "duration": 433,
+     "isrc": "US58L1039008"
+    }
+   },
+   {
+    "item": {
+     "id": 111388560,
+     "title": "In California",
+     "trackNumber": 3,
+     "volumeNumber": 2,
+     "duration": 522,
+     "isrc": "US58L1039009"
+    }
+   },
+   {
+    "item": {
+     "id": 111388561,
+     "title": "Jackrabbits",
+     "trackNumber": 4,
+     "volumeNumber": 2,
+     "duration": 263,
+     "isrc": "US58L1039010"
+    }
+   },
+   {
+    "item": {
+     "id": 111388562,
+     "title": "Go Long",
+     "trackNumber": 5,
+     "volumeNumber": 2,
+     "duration": 483,
+     "isrc": "US58L1039011"
+    }
+   },
+   {
+    "item": {
+     "id": 111388563,
+     "title": "Occident",
+     "trackNumber": 6,
+     "volumeNumber": 2,
+     "duration": 331,
+     "isrc": "US58L1039012"
+    }
+   },
+   {
+    "item": {
+     "id": 111388564,
+     "title": "Soft As Chalk",
+     "trackNumber": 1,
+     "volumeNumber": 3,
+     "duration": 389,
+     "isrc": "US58L1039013"
+    }
+   },
+   {
+    "item": {
+     "id": 111388565,
+     "title": "Esme",
+     "trackNumber": 2,
+     "volumeNumber": 3,
+     "duration": 476,
+     "isrc": "US58L1039014"
+    }
+   },
+   {
+    "item": {
+     "id": 111388566,
+     "title": "Autumn",
+     "trackNumber": 3,
+     "volumeNumber": 3,
+     "duration": 482,
+     "isrc": "US58L1039015"
+    }
+   },
+   {
+    "item": {
+     "id": 111388567,
+     "title": "Ribbon Bows",
+     "trackNumber": 4,
+     "volumeNumber": 3,
+     "duration": 371,
+     "isrc": "US58L1039016"
+    }
+   },
+   {
+    "item": {
+     "id": 111388568,
+     "title": "Kingfisher",
+     "trackNumber": 5,
+     "volumeNumber": 3,
+     "duration": 551,
+     "isrc": "US58L1039017"
+    }
+   },
+   {
+    "item": {
+     "id": 111388569,
+     "title": "Does Not Suffice",
+     "trackNumber": 6,
+     "volumeNumber": 3,
+     "duration": 405,
+     "isrc": "US58L1039018"
+    }
+   }
+  ]
+ }
+}

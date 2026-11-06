@@ -1,0 +1,121 @@
+{
+ "album": {
+  "id": 28384190,
+  "title": "To Be Kind",
+  "artist": {
+   "id": 3546966,
+   "name": "Swans",
+   "handle": null,
+   "type": "MAIN",
+   "picture": "dc9b6ee1-9415-484c-a7f3-0abab5d477ba"
+  },
+  "numberOfTracks": 10,
+  "numberOfVolumes": 2,
+  "releaseDate": "2014-05-13",
+  "upc": "5051083079297"
+ },
+ "items": {
+  "items": [
+   {
+    "item": {
+     "id": 28384191,
+     "title": "Screen Shot",
+     "trackNumber": 1,
+     "volumeNumber": 1,
+     "duration": 485,
+     "isrc": "USAST1462301"
+    }
+   },
+   {
+    "item": {
+     "id": 28384192,
+     "title": "Just a Little Boy (For Chester Burnett)",
+     "trackNumber": 2,
+     "volumeNumber": 1,
+     "duration": 760,
+     "isrc": "USAST1462302"
+    }
+   },
+   {
+    "item": {
+     "id": 28384193,
+     "title": "A Little God in My Hands",
+     "trackNumber": 3,
+     "volumeNumber": 1,
+     "duration": 428,
+     "isrc": "USAST1462303"
+    }
+   },
+   {
+    "item": {
+     "id": 28384194,
+     "title": "Bring the Sun / Toussaint L'Ouverture",
+     "trackNumber": 4,
+     "volumeNumber": 1,
+     "duration": 2045,
+     "isrc": "USAST1462304"
+    }
+   },
+   {
+    "item": {
+     "id": 28384195,
+     "title": "Some Things We Do",
+     "trackNumber": 5,
+     "volumeNumber": 1,
+     "duration": 309,
+     "isrc": "USAST1462305"
+    }
+   },
+   {
+    "item": {
+     "id": 28384196,
+     "title": "She Loves Us",
+     "trackNumber": 1,
+     "volumeNumber": 2,
+     "duration": 1021,
+     "isrc": "USAST1462306"
+    }
+   },
+   {
+    "item": {
+     "id": 28384197,
+     "title": "Kirsten Supine",
+     "trackNumber": 2,
+     "volumeNumber": 2,
+     "duration": 632,
+     "isrc": "USAST1462307"
+    }
+   },
+   {
+    "item": {
+     "id": 28384198,
+     "title": "Oxygen",
+     "trackNumber": 3,
+     "volumeNumber": 2,
+     "duration": 479,
+     "isrc": "USAST1462308"
+    }
+   },
+   {
+    "item": {
+     "id": 28384199,
+     "title": "Nathalie Neal",
+     "trackNumber": 4,
+     "volumeNumber": 2,
+     "duration": 615,
+     "isrc": "USAST1462309"
+    }
+   },
+   {
+    "item": {
+     "id": 28384200,
+     "title": "To Be Kind",
+     "trackNumber": 5,
+     "volumeNumber": 2,
+     "duration": 503,
+     "isrc": "USAST1462310"
+    }
+   }
+  ]
+ }
+}

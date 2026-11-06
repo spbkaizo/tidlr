@@ -243,6 +243,52 @@ mid-flight are recovered automatically, and `tidlr retry` picks up failures.
 The scratch download area (partial FLACs before conversion) also lives under
 `~/.local/share/tidlr/` and is cleaned up automatically.
 
+### Tagging and filing with MusicBrainz (replacing Picard)
+
+Set `library_dir` in `config.toml` and each downloaded album is finished the
+way a Picard setup with the lastfmng plugin would finish it:
+
+1. **Identified on MusicBrainz**: by the album's barcode, then by its tracks'
+   ISRCs, then by artist, title and track count. A release is accepted only if
+   its track list matches what was downloaded (same number of tracks, lengths
+   within 3 seconds). Among several matches the preference is: most matching
+   ISRCs, official status, country GB > XW > US, Digital Media > CD, then the
+   earliest release.
+2. **Given a genre**: from Last.fm tags, weighted and filtered exactly as
+   lastfmng does, using its genre lists from Picard's plugin folder. This needs
+   `lastfm_api_key`. Without the key, or when Last.fm has nothing, the genre
+   comes from MusicBrainz's genres.
+3. **Tagged** with Picard's tag set: MusicBrainz ids, label, catalogue number,
+   barcode, media, release type, status and country, original date, ISRC,
+   sort names, and grouping, genre and mood. Multi-valued tags are joined with
+   `; `. Cover art stays the 1280px Tidal cover.
+4. **Filed** as
+
+   ```
+   <library_dir>/Archive Albums/<Genre>/<Artist> - <Year> - <Album>/NN - Title.m4a
+   ```
+
+   Soundtracks go under `Archive Soundtracks` and Various Artists
+   compilations under `Archive Compilations`. Multi-disc albums number tracks
+   `101`, `102`, … `201`. `:` `?` `*` `|` `"` `<` `>` become `~`, and a
+   trailing `.` on a folder name becomes `_`, as in Picard. `cover.jpg` and any
+   `.lrc` files move with the album.
+
+```toml
+library_dir    = "/Volumes/music/FLAC"
+lastfm_api_key = "…"   # free: https://www.last.fm/api/account/create
+```
+
+An album that can't be identified, or whose folder already exists in the
+library, is **held for review** in `review_dir` (default
+`<output_dir>/_review`) with its basic tags, and is never overwritten. It
+counts as downloaded, so it isn't fetched again. `tidlr status` lists held
+albums with the reason, ready to sort out by hand, for example in Picard.
+
+tidlr checks that `library_dir` is reachable before starting, so a run with
+the network share unmounted stops straight away instead of failing every album.
+Tagging needs AtomicParsley (`brew install atomicparsley`).
+
 ---
 
 ## 9. Configuration reference

@@ -3,6 +3,20 @@
 All notable changes to `tidlr` are documented here. This project adheres to
 [Semantic Versioning](https://semver.org).
 
+## [Unreleased]
+
+### Added
+
+- **MusicBrainz tagging and filing, replacing Picard** (`library_dir`). Each
+  downloaded album is identified on MusicBrainz (barcode, then ISRCs, then
+  name search, checked against the downloaded track list), given a genre from
+  Last.fm as the lastfmng Picard plugin did (`lastfm_api_key`; MusicBrainz
+  genres otherwise), tagged with Picard's tag set via AtomicParsley, and filed
+  as `Archive Albums/<Genre>/<Artist> - <Year> - <Album>/` following the
+  Picard naming script. Albums that can't be identified, or are already in the
+  library, are held in `review_dir` and listed by `tidlr status`.
+- New `review` queue state.
+
 ## [1.9.0] — 2026-09-18
 
 ### Added

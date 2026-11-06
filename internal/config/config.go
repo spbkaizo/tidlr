@@ -46,22 +46,41 @@ type Config struct {
 	// serially — set it false to keep DownloadWorkers albums in flight instead.
 	// It is a no-op on a non-TTY, where DownloadWorkers is honoured regardless.
 	Progress bool `toml:"progress"`
+
+	// LibraryDir, when set, replaces Picard: each downloaded album is
+	// identified on MusicBrainz, tagged the way Picard tags, and filed under
+	// <LibraryDir>/Archive Albums/<Genre>/<Artist> - <Year> - <Album>/.
+	// Empty keeps albums in OutputDir with basic tags only.
+	LibraryDir string `toml:"library_dir"`
+	// ReviewDir holds albums that could not be identified or filed, with
+	// their basic tags. Default <OutputDir>/_review.
+	ReviewDir string `toml:"review_dir"`
+	// LastFMAPIKey enables genre (and so genre-folder) lookup on Last.fm, as
+	// the lastfmng Picard plugin did. Without it genres come from MusicBrainz.
+	LastFMAPIKey string `toml:"lastfm_api_key"`
+	// LastFMNGDefaults is lastfmng's defaults.ini, read for its genre lists.
+	// Empty finds it in Picard's plugin folder; if absent, a built-in ID3
+	// genre list is used.
+	LastFMNGDefaults string `toml:"lastfmng_defaults"`
+	// AtomicParsleyBin writes the MusicBrainz tags (brew install atomicparsley).
+	AtomicParsleyBin string `toml:"atomicparsley_bin"`
 }
 
 // Default returns a Config populated with the project's chosen defaults.
 func Default() Config {
 	home, _ := os.UserHomeDir()
 	return Config{
-		OutputDir:       filepath.Join(home, "Music", "tidlr"),
-		WorkDir:         filepath.Join(home, ".local", "share", "tidlr"),
-		FFmpegBin:       "ffmpeg",
-		AuthFile:        "", // empty => tidal.DefaultAuthPath() (~/.tiddl/auth.json)
-		Quality:         "max",
-		DownloadThreads: 8,
-		DownloadWorkers: 3,
-		ConvertWorkers:  4,
-		KeepFLAC:        false,
-		Progress:        true,
+		OutputDir:        filepath.Join(home, "Music", "tidlr"),
+		WorkDir:          filepath.Join(home, ".local", "share", "tidlr"),
+		FFmpegBin:        "ffmpeg",
+		AuthFile:         "", // empty => tidal.DefaultAuthPath() (~/.tiddl/auth.json)
+		Quality:          "max",
+		DownloadThreads:  8,
+		DownloadWorkers:  3,
+		ConvertWorkers:   4,
+		KeepFLAC:         false,
+		Progress:         true,
+		AtomicParsleyBin: "AtomicParsley",
 	}
 }
 
@@ -81,6 +100,17 @@ func Load(path string) (Config, error) {
 	cfg.OutputDir = expandHome(cfg.OutputDir)
 	cfg.WorkDir = expandHome(cfg.WorkDir)
 	cfg.AuthFile = expandHome(cfg.AuthFile)
+	cfg.LibraryDir = expandHome(cfg.LibraryDir)
+	cfg.ReviewDir = expandHome(cfg.ReviewDir)
+	cfg.LastFMNGDefaults = expandHome(cfg.LastFMNGDefaults)
+	if cfg.ReviewDir == "" {
+		cfg.ReviewDir = filepath.Join(cfg.OutputDir, "_review")
+	}
+	if cfg.LastFMNGDefaults == "" {
+		if home, err := os.UserHomeDir(); err == nil {
+			cfg.LastFMNGDefaults = filepath.Join(home, "Library", "Preferences", "MusicBrainz", "Picard", "plugins", "lastfmng", "defaults.ini")
+		}
+	}
 	return cfg, nil
 }
 

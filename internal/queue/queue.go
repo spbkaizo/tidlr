@@ -28,6 +28,10 @@ const (
 	// StateFailed, RequeueFailed leaves these alone, so they stop churning on
 	// every `retry`.
 	StateSkipped State = "skipped"
+	// StateReview means the album downloaded but could not be identified or
+	// filed in the library; it waits in the review folder for a person.
+	// Permanent like StateSkipped: retrying would only download it again.
+	StateReview State = "review"
 )
 
 // Item is one album in the queue.
@@ -314,13 +318,44 @@ func (q *Queue) Fail(reviewID int, cause error) error {
 // Skip marks an item permanently skipped: a retry cannot help, so RequeueFailed
 // will not pick it up again. Used when no Tidal album matches the ADM title.
 func (q *Queue) Skip(reviewID int, cause error) error {
+	return q.finish(reviewID, StateSkipped, cause)
+}
+
+// Review marks an item held for review: downloaded, but not identified or
+// filed in the library. Like Skip it is permanent, recording why.
+func (q *Queue) Review(reviewID int, cause error) error {
+	return q.finish(reviewID, StateReview, cause)
+}
+
+// finish moves an item to a terminal state, recording the cause.
+func (q *Queue) finish(reviewID int, state State, cause error) error {
 	msg := ""
 	if cause != nil {
 		msg = cause.Error()
 	}
 	_, err := q.db.Exec(`UPDATE items SET state=?, last_error=?, updated_at=? WHERE review_id=?`,
-		StateSkipped, msg, time.Now().UTC(), reviewID)
+		state, msg, time.Now().UTC(), reviewID)
 	return err
+}
+
+// InState returns the items in a state, oldest first.
+func (q *Queue) InState(state State) ([]Item, error) {
+	rows, err := q.db.Query(`
+		SELECT review_id, artist, album, review_url, state, attempts, last_error, flac_dir, created_at, updated_at
+		FROM items WHERE state = ? ORDER BY updated_at`, state)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var out []Item
+	for rows.Next() {
+		it, err := scanItem(rows)
+		if err != nil {
+			return nil, err
+		}
+		out = append(out, *it)
+	}
+	return out, rows.Err()
 }
 
 // RequeueFailed moves all failed items back to pending so a subsequent run

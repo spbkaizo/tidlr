@@ -1,0 +1,111 @@
+{
+ "album": {
+  "id": 506480825,
+  "title": "U",
+  "artist": {
+   "id": 9342771,
+   "name": "underscores",
+   "handle": null,
+   "type": "MAIN",
+   "picture": "b1248592-2757-4726-9d04-5807b0b553a1"
+  },
+  "numberOfTracks": 9,
+  "numberOfVolumes": 1,
+  "releaseDate": "2026-03-20",
+  "upc": "810090098852"
+ },
+ "items": {
+  "items": [
+   {
+    "item": {
+     "id": 506480832,
+     "title": "Tell Me (U Want It)",
+     "trackNumber": 1,
+     "volumeNumber": 1,
+     "duration": 213,
+     "isrc": "USQE92600003"
+    }
+   },
+   {
+    "item": {
+     "id": 506480835,
+     "title": "Music",
+     "trackNumber": 2,
+     "volumeNumber": 1,
+     "duration": 207,
+     "isrc": "USQE92500121"
+    }
+   },
+   {
+    "item": {
+     "id": 506480839,
+     "title": "Hollywood Forever",
+     "trackNumber": 3,
+     "volumeNumber": 1,
+     "duration": 295,
+     "isrc": "USQE92600025"
+    }
+   },
+   {
+    "item": {
+     "id": 506480842,
+     "title": "The Peace",
+     "trackNumber": 4,
+     "volumeNumber": 1,
+     "duration": 170,
+     "isrc": "USQE92600026"
+    }
+   },
+   {
+    "item": {
+     "id": 506480845,
+     "title": "Innuendo (I Get U)",
+     "trackNumber": 5,
+     "volumeNumber": 1,
+     "duration": 208,
+     "isrc": "USQE92600027"
+    }
+   },
+   {
+    "item": {
+     "id": 506480848,
+     "title": "Lovefield",
+     "trackNumber": 6,
+     "volumeNumber": 1,
+     "duration": 232,
+     "isrc": "USQE92600028"
+    }
+   },
+   {
+    "item": {
+     "id": 506480851,
+     "title": "Do It",
+     "trackNumber": 7,
+     "volumeNumber": 1,
+     "duration": 213,
+     "isrc": "USQE92500248"
+    }
+   },
+   {
+    "item": {
+     "id": 506480853,
+     "title": "Bodyfeeling",
+     "trackNumber": 8,
+     "volumeNumber": 1,
+     "duration": 248,
+     "isrc": "USQE92600029"
+    }
+   },
+   {
+    "item": {
+     "id": 506480855,
+     "title": "Wish U Well",
+     "trackNumber": 9,
+     "volumeNumber": 1,
+     "duration": 261,
+     "isrc": "USQE92600030"
+    }
+   }
+  ]
+ }
+}

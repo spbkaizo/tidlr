@@ -14,6 +14,7 @@ import (
 	"github.com/simonb/tidlr/internal/adm"
 	"github.com/simonb/tidlr/internal/convert"
 	"github.com/simonb/tidlr/internal/downloader"
+	"github.com/simonb/tidlr/internal/organize"
 	"github.com/simonb/tidlr/internal/queue"
 )
 
@@ -31,6 +32,10 @@ type Pipeline struct {
 	// not print the same thing twice.
 	QuietDownloadStart bool
 
+	// Organizer, if set, identifies, tags and files each converted album in
+	// the library (replacing Picard). Nil keeps albums where convert put them.
+	Organizer *organize.Organizer
+
 	Log *log.Logger
 }
 
@@ -39,9 +44,8 @@ type Pipeline struct {
 // converter via an in-process channel so conversion overlaps with downloading.
 func (p *Pipeline) Run(ctx context.Context) error {
 	type job struct {
-		item     queue.Item
-		audioDir string
-		lossless bool
+		item queue.Item
+		res  downloader.Result
 	}
 	convertCh := make(chan job, p.ConvertWorkers*2)
 
@@ -52,7 +56,7 @@ func (p *Pipeline) Run(ctx context.Context) error {
 		go func() {
 			defer convWG.Done()
 			for j := range convertCh {
-				p.runConvert(ctx, j.item, j.audioDir, j.lossless)
+				p.runConvert(ctx, j.item, j.res)
 			}
 		}()
 	}
@@ -75,8 +79,8 @@ func (p *Pipeline) Run(ctx context.Context) error {
 				if item == nil {
 					return // no pending work left
 				}
-				if dir, lossless, ok := p.runDownload(ctx, *item); ok {
-					convertCh <- job{item: *item, audioDir: dir, lossless: lossless}
+				if res, ok := p.runDownload(ctx, *item); ok {
+					convertCh <- job{item: *item, res: res}
 				}
 			}
 		}()
@@ -88,7 +92,7 @@ func (p *Pipeline) Run(ctx context.Context) error {
 	return ctx.Err()
 }
 
-func (p *Pipeline) runDownload(ctx context.Context, item queue.Item) (string, bool, bool) {
+func (p *Pipeline) runDownload(ctx context.Context, item queue.Item) (downloader.Result, bool) {
 	r := adm.Release{ReviewID: item.ReviewID, Artist: item.Artist, Album: item.Album, ReviewURL: item.ReviewURL}
 	if !p.QuietDownloadStart {
 		p.logf("downloading: %s — %s", item.Artist, item.Album)
@@ -103,11 +107,11 @@ func (p *Pipeline) runDownload(ctx context.Context, item queue.Item) (string, bo
 			// not churn on it forever.
 			p.logf("skipped (no match): %s — %s", item.Artist, item.Album)
 			p.Queue.Skip(item.ReviewID, err)
-			return "", false, false
+			return downloader.Result{}, false
 		}
 		p.logf("download failed: %s — %s: %v", item.Artist, item.Album, err)
 		p.Queue.Fail(item.ReviewID, err)
-		return "", false, false
+		return downloader.Result{}, false
 	}
 	if !res.Lossless {
 		p.logf("note: only a lossy edition available for %s — %s; taking it as fallback", item.Artist, item.Album)
@@ -118,14 +122,15 @@ func (p *Pipeline) runDownload(ctx context.Context, item queue.Item) (string, bo
 	if err := p.Queue.SetState(item.ReviewID, queue.StateConverting); err != nil {
 		p.logf("set converting: %v", err)
 	}
-	return res.AudioDir, res.Lossless, true
+	return res, true
 }
 
-func (p *Pipeline) runConvert(ctx context.Context, item queue.Item, audioDir string, lossless bool) {
+func (p *Pipeline) runConvert(ctx context.Context, item queue.Item, res downloader.Result) {
 	r := adm.Release{ReviewID: item.ReviewID, Artist: item.Artist, Album: item.Album}
+	audioDir := res.AudioDir
 	p.logf("converting:  %s — %s", item.Artist, item.Album)
 
-	out, err := p.Converter.Convert(ctx, r, audioDir, lossless)
+	out, err := p.Converter.Convert(ctx, r, audioDir, res.Lossless)
 	if err != nil {
 		p.logf("convert failed: %s — %s: %v", item.Artist, item.Album, err)
 		p.Queue.Fail(item.ReviewID, err)
@@ -133,6 +138,26 @@ func (p *Pipeline) runConvert(ctx context.Context, item queue.Item, audioDir str
 	}
 	// Clean up the now-empty scratch download dir (best effort).
 	os.RemoveAll(audioDir)
+
+	if p.Organizer != nil {
+		dest, err := p.Organizer.Organize(ctx, organize.Album{Dir: out, Tidal: res.Album, Tracks: res.Tracks})
+		if err != nil {
+			// Held for review (or the organizer failed and left the album
+			// where convert put it). Either way it is downloaded: record it
+			// so it is not fetched again, and leave it for a person.
+			var rev *organize.ReviewError
+			if errors.As(err, &rev) {
+				out = rev.Dir
+			}
+			p.logf("review:      %s — %s: %v", item.Artist, item.Album, err)
+			if err := p.Queue.MarkDownloaded(item.ReviewID, item.Artist, item.Album, out); err != nil {
+				p.logf("mark downloaded: %v", err)
+			}
+			p.Queue.Review(item.ReviewID, err)
+			return
+		}
+		out = dest
+	}
 
 	// Record permanently so future scrapes skip it (unless --force).
 	if err := p.Queue.MarkDownloaded(item.ReviewID, item.Artist, item.Album, out); err != nil {

@@ -47,6 +47,9 @@ func normalize(s string) string {
 	return strings.TrimSpace(s)
 }
 
+// Normalize is the exported form of normalize.
+func Normalize(s string) string { return normalize(s) }
+
 // isLossless reports whether the album is downloadable as lossless FLAC: it must
 // carry a STEREO mode (Atmos-only comes as lossy EAC3) and a lossless quality.
 func isLossless(a Album) bool {

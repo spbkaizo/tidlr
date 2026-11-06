@@ -1,0 +1,121 @@
+{
+ "album": {
+  "id": 486357700,
+  "title": "From Kinshasa",
+  "artist": {
+   "id": 6666731,
+   "name": "Mbongwana Star",
+   "handle": null,
+   "type": "MAIN",
+   "picture": "68bc2c7c-4504-40cc-99b5-4b31227a7f53"
+  },
+  "numberOfTracks": 10,
+  "numberOfVolumes": 1,
+  "releaseDate": "2015-05-18",
+  "upc": "03614591568503"
+ },
+ "items": {
+  "items": [
+   {
+    "item": {
+     "id": 486357701,
+     "title": "From Kinshasa to the Moon",
+     "trackNumber": 1,
+     "volumeNumber": 1,
+     "duration": 145,
+     "isrc": "GBBGU1591001"
+    }
+   },
+   {
+    "item": {
+     "id": 486357702,
+     "title": "Shégué",
+     "trackNumber": 2,
+     "volumeNumber": 1,
+     "duration": 317,
+     "isrc": "GBBGU1591002"
+    }
+   },
+   {
+    "item": {
+     "id": 486357703,
+     "title": "Nganshé",
+     "trackNumber": 3,
+     "volumeNumber": 1,
+     "duration": 375,
+     "isrc": "GBBGU1591003"
+    }
+   },
+   {
+    "item": {
+     "id": 486357704,
+     "title": "Masobélé",
+     "trackNumber": 4,
+     "volumeNumber": 1,
+     "duration": 233,
+     "isrc": "GBBGU1591004"
+    }
+   },
+   {
+    "item": {
+     "id": 486357705,
+     "title": "Coco Blues",
+     "trackNumber": 5,
+     "volumeNumber": 1,
+     "duration": 341,
+     "isrc": "GBBGU1591005"
+    }
+   },
+   {
+    "item": {
+     "id": 486357706,
+     "title": "Malukayi",
+     "trackNumber": 6,
+     "volumeNumber": 1,
+     "duration": 362,
+     "isrc": "GBBGU1591006"
+    }
+   },
+   {
+    "item": {
+     "id": 486357707,
+     "title": "Suzanna",
+     "trackNumber": 7,
+     "volumeNumber": 1,
+     "duration": 274,
+     "isrc": "GBBGU1591007"
+    }
+   },
+   {
+    "item": {
+     "id": 486357708,
+     "title": "Kimpala",
+     "trackNumber": 8,
+     "volumeNumber": 1,
+     "duration": 270,
+     "isrc": "GBBGU1591008"
+    }
+   },
+   {
+    "item": {
+     "id": 486357709,
+     "title": "Kala",
+     "trackNumber": 9,
+     "volumeNumber": 1,
+     "duration": 246,
+     "isrc": "GBBGU1591009"
+    }
+   },
+   {
+    "item": {
+     "id": 486357710,
+     "title": "1 million c'est quoi?",
+     "trackNumber": 10,
+     "volumeNumber": 1,
+     "duration": 305,
+     "isrc": "GBBGU1591010"
+    }
+   }
+  ]
+ }
+}
