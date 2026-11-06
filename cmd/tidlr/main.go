@@ -39,6 +39,7 @@ import (
 	"github.com/simonb/tidlr/internal/config"
 	"github.com/simonb/tidlr/internal/convert"
 	"github.com/simonb/tidlr/internal/downloader"
+	"github.com/simonb/tidlr/internal/filing"
 	"github.com/simonb/tidlr/internal/genre"
 	"github.com/simonb/tidlr/internal/musicbrainz"
 	"github.com/simonb/tidlr/internal/organize"
@@ -309,6 +310,7 @@ func mustScrape(ctx context.Context, q *queue.Queue, since time.Time, force bool
 }
 
 func mustRun(ctx context.Context, cfg config.Config, q *queue.Queue) {
+	mustLibraryMounted(cfg) // before any download, so nothing is fetched in vain
 	auth, err := tidal.LoadAuth(cfg.AuthPath())
 	if err != nil {
 		log.Fatalf("Tidal auth: %v (run `tidlr login`)", err)
@@ -722,10 +724,11 @@ func mustAlbum(ctx context.Context, cfg config.Config, arg string, force bool) {
 		defer q.Close()
 	}
 
+	// Check the library first: no point downloading if it can't be filed.
+	org := mustOrganizer(cfg, log.Default())
 	client := authedClient(ctx, cfg)
 	dl := &tidal.Downloader{Client: client, FFmpegBin: cfg.FFmpegBin, Threads: cfg.DownloadThreads, Log: log.Default()}
 	conv := &convert.Converter{FFmpegBin: cfg.FFmpegBin, OutputDir: cfg.OutputDir, KeepFLAC: cfg.KeepFLAC}
-	org := mustOrganizer(cfg, log.Default())
 	scratch := filepath.Join(cfg.DownloadDir(), "album")
 	if err := os.MkdirAll(scratch, 0o755); err != nil {
 		log.Fatalf("scratch dir: %v", err)
@@ -749,6 +752,11 @@ func mustAlbum(ctx context.Context, cfg config.Config, arg string, force bool) {
 		}
 		log.Printf("[%d/%d] downloading album %d ...", i+1, len(ids), albumID)
 		out, artist, album, err := downloadOneAlbum(ctx, cfg, dl, conv, org, scratch, albumID)
+		if errors.Is(err, filing.ErrNotMounted) {
+			failed++
+			log.Printf("[%d/%d] stopping: %v", i+1, len(ids), err)
+			break
+		}
 		if err != nil {
 			failed++
 			log.Printf("[%d/%d] FAILED album %d: %v", i+1, len(ids), albumID, err)
@@ -828,9 +836,7 @@ func mustOrganizer(cfg config.Config, logger *log.Logger) *organize.Organizer {
 	if cfg.LibraryDir == "" {
 		return nil
 	}
-	if fi, err := os.Stat(cfg.LibraryDir); err != nil || !fi.IsDir() {
-		log.Fatalf("library_dir %s is not reachable (is the share mounted?)", cfg.LibraryDir)
-	}
+	home := mustLibraryMounted(cfg)
 	if _, err := exec.LookPath(cfg.AtomicParsleyBin); err != nil {
 		log.Fatalf("library_dir needs AtomicParsley to write tags: brew install atomicparsley (%v)", err)
 	}
@@ -846,6 +852,7 @@ func mustOrganizer(cfg config.Config, logger *log.Logger) *organize.Organizer {
 		Tagger:     tagger.Writer{Bin: cfg.AtomicParsleyBin},
 		LibraryDir: cfg.LibraryDir,
 		ReviewDir:  cfg.ReviewDir,
+		LocalDir:   home,
 		Log:        logger,
 	}
 	if cfg.LastFMAPIKey != "" {
@@ -854,6 +861,19 @@ func mustOrganizer(cfg config.Config, logger *log.Logger) *organize.Organizer {
 		logger.Printf("no lastfm_api_key: genre folders come from MusicBrainz genres")
 	}
 	return o
+}
+
+// mustLibraryMounted exits when library_dir is set but its share is not
+// mounted (or not writable), returning the home folder used for the check.
+func mustLibraryMounted(cfg config.Config) string {
+	home, _ := os.UserHomeDir()
+	if cfg.LibraryDir == "" {
+		return home
+	}
+	if err := filing.CheckMounted(cfg.LibraryDir, home); err != nil {
+		log.Fatalf("library_dir: %v", err)
+	}
+	return home
 }
 
 // appVersion is the short version for User-Agent strings.

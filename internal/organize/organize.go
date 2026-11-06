@@ -32,6 +32,9 @@ type Organizer struct {
 
 	LibraryDir string // e.g. /Volumes/music/FLAC
 	ReviewDir  string // albums held for review: <ReviewDir>/<Artist>/<Album>
+	// LocalDir is a folder on the local disk (the home folder); a library
+	// under /Volumes on the same disk means its share is not mounted.
+	LocalDir string
 
 	Log *log.Logger
 }
@@ -55,8 +58,11 @@ type Album struct {
 
 // Organize identifies, tags and files a. It returns the album's library
 // folder, or a *ReviewError once a has been moved to the review folder. Any
-// other error leaves a where it was.
+// other error (including filing.ErrNotMounted) leaves a where it was.
 func (o *Organizer) Organize(ctx context.Context, a Album) (string, error) {
+	if err := filing.CheckMounted(o.LibraryDir, o.LocalDir); err != nil {
+		return "", err
+	}
 	tracks := append([]tidal.Track(nil), a.Tracks...)
 	sort.SliceStable(tracks, func(i, j int) bool {
 		if tracks[i].VolumeNumber != tracks[j].VolumeNumber {
@@ -119,6 +125,11 @@ func (o *Organizer) Organize(ctx context.Context, a Album) (string, error) {
 	}
 	moves = append(moves, extras(a.Dir)...)
 
+	// The share can drop mid-batch; check again right before writing to it.
+	// An unmounted library is not the album's fault: leave it where it is.
+	if err := filing.CheckMounted(o.LibraryDir, o.LocalDir); err != nil {
+		return "", err
+	}
 	dest := filepath.Join(o.LibraryDir, filing.AlbumDir(fa))
 	if err := filing.Place(dest, moves); err != nil {
 		if errors.Is(err, filing.ErrExists) {

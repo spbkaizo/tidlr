@@ -11,6 +11,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/simonb/tidlr/internal/filing"
 	"github.com/simonb/tidlr/internal/genre"
 	"github.com/simonb/tidlr/internal/musicbrainz"
 	"github.com/simonb/tidlr/internal/musicbrainz/mbtest"
@@ -68,6 +69,9 @@ func organizer(t *testing.T) *Organizer {
 	mb.HTTP = &http.Client{Transport: mbtest.Replay{Dir: filepath.Join(mbData, "http"), T: t}}
 	mb.Interval = 1
 	root := t.TempDir()
+	if err := os.Mkdir(filepath.Join(root, "library"), 0o755); err != nil {
+		t.Fatal(err)
+	}
 	return &Organizer{
 		MB: mb, Prefs: musicbrainz.DefaultPrefs, Lists: genre.Builtin(), Tagger: tagger.Writer{},
 		LibraryDir: filepath.Join(root, "library"), ReviewDir: filepath.Join(root, "review"),
@@ -117,5 +121,25 @@ func TestOrganizeFilesTaggedAlbum(t *testing.T) {
 	}
 	if _, err := os.Stat(filepath.Join(rev.Dir, "01 - Trinidad.m4a")); err != nil {
 		t.Errorf("review copy missing: %v", err)
+	}
+}
+
+func TestOrganizeStopsWhenLibraryUnmounted(t *testing.T) {
+	a := downloaded(t, "440082667")
+	o := organizer(t)
+	o.LibraryDir = filepath.Join(o.LibraryDir, "share-gone")
+	_, err := o.Organize(context.Background(), a)
+	if !errors.Is(err, filing.ErrNotMounted) {
+		t.Fatalf("err = %v, want filing.ErrNotMounted", err)
+	}
+	// Nothing moved: the album is still where convert left it, and nothing
+	// went to review or was created where the library should be.
+	if _, err := os.Stat(filepath.Join(a.Dir, "01 - Trinidad.m4a")); err != nil {
+		t.Errorf("album moved away: %v", err)
+	}
+	for _, d := range []string{o.LibraryDir, o.ReviewDir} {
+		if _, err := os.Stat(d); !os.IsNotExist(err) {
+			t.Errorf("%s was created", d)
+		}
 	}
 }

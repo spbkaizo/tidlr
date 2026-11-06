@@ -10,10 +10,12 @@ import (
 	"log"
 	"os"
 	"sync"
+	"sync/atomic"
 
 	"github.com/simonb/tidlr/internal/adm"
 	"github.com/simonb/tidlr/internal/convert"
 	"github.com/simonb/tidlr/internal/downloader"
+	"github.com/simonb/tidlr/internal/filing"
 	"github.com/simonb/tidlr/internal/organize"
 	"github.com/simonb/tidlr/internal/queue"
 )
@@ -35,6 +37,9 @@ type Pipeline struct {
 	// Organizer, if set, identifies, tags and files each converted album in
 	// the library (replacing Picard). Nil keeps albums where convert put them.
 	Organizer *organize.Organizer
+
+	halted atomic.Bool // set when the library becomes unreachable
+	halt   sync.Once
 
 	Log *log.Logger
 }
@@ -68,7 +73,7 @@ func (p *Pipeline) Run(ctx context.Context) error {
 		go func() {
 			defer dlWG.Done()
 			for {
-				if ctx.Err() != nil {
+				if ctx.Err() != nil || p.halted.Load() {
 					return
 				}
 				item, err := p.Queue.ClaimPending(queue.StateDownloading)
@@ -141,6 +146,14 @@ func (p *Pipeline) runConvert(ctx context.Context, item queue.Item, res download
 
 	if p.Organizer != nil {
 		dest, err := p.Organizer.Organize(ctx, organize.Album{Dir: out, Tidal: res.Album, Tracks: res.Tracks})
+		if errors.Is(err, filing.ErrNotMounted) {
+			// The library vanished mid-run. Stop starting new albums; this
+			// one stays converted in the output folder and is retried later.
+			p.halt.Do(func() { p.logf("stopping: %v; pending albums stay queued", err) })
+			p.halted.Store(true)
+			p.Queue.Fail(item.ReviewID, err)
+			return
+		}
 		if err != nil {
 			// Held for review (or the organizer failed and left the album
 			// where convert put it). Either way it is downloaded: record it
