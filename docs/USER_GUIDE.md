@@ -285,9 +285,35 @@ library, is **held for review** in `review_dir` (default
 counts as downloaded, so it isn't fetched again. `tidlr status` lists held
 albums with the reason, ready to sort out by hand, for example in Picard.
 
-tidlr checks that `library_dir` is reachable before starting, so a run with
-the network share unmounted stops straight away instead of failing every album.
+tidlr checks that `library_dir` is mounted and writable before starting, so a
+run with the network share unmounted exits straight away instead of
+downloading albums it can't file. For a library under `/Volumes`, `/mnt` or
+`/media` it also checks the folder really is a separate filesystem: a share
+that has dropped can leave its mount point behind as an ordinary local folder,
+and tidlr won't fill your local disk through it. The check repeats before each
+album is filed; if the share drops mid-run, tidlr stops starting new albums and
+leaves the current one in `output_dir`.
+
 Tagging needs AtomicParsley (`brew install atomicparsley`).
+
+#### Fixing genre folders of existing albums
+
+`tidlr retag` works out the genre of albums already in the library from their
+own tags (Last.fm, then the MusicBrainz genres of the release they're tagged
+with), rewrites their genre tags and moves them into the right genre folder.
+Only the genre part of the path changes. It's a dry run unless you add
+`-apply`:
+
+```sh
+tidlr retag                                  # plan: every Archive */Unknown folder
+tidlr -apply retag                           # do it
+tidlr -limit 20 retag "/Volumes/music/FLAC/Archive Albums/Indie"   # check a folder
+```
+
+The report ends with how often the computed genre agreed with an album's
+current folder, a quick check against folders chosen earlier. Albums with no
+genre from either source stay where they are, and an existing folder is never
+overwritten.
 
 ---
 

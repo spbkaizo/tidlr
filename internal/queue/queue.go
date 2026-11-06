@@ -107,6 +107,16 @@ func (q *Queue) migrate() error {
 		-- (tidlr --album). Kept separate from the downloads table because that is
 		-- keyed by ADM review id: the two id spaces are unrelated and sharing a
 		-- primary key would let an ADM review id collide with a Tidal album id.
+		-- Lookups worth keeping between runs (e.g. Last.fm tags), by
+		-- namespace and key.
+		CREATE TABLE IF NOT EXISTS cache (
+			ns         TEXT NOT NULL,
+			key        TEXT NOT NULL,
+			value      BLOB NOT NULL,
+			updated_at TIMESTAMP NOT NULL,
+			PRIMARY KEY (ns, key)
+		);
+
 		CREATE TABLE IF NOT EXISTS tidal_downloads (
 			album_id       INTEGER PRIMARY KEY,
 			artist         TEXT NOT NULL,
@@ -116,6 +126,30 @@ func (q *Queue) migrate() error {
 		);
 	`)
 	return err
+}
+
+// Cache is a persistent key-value store in one namespace of the database.
+type Cache struct {
+	q  *Queue
+	ns string
+}
+
+// Cache returns the store for namespace ns.
+func (q *Queue) Cache(ns string) Cache { return Cache{q, ns} }
+
+// Get returns the value stored under key.
+func (c Cache) Get(key string) ([]byte, bool) {
+	var v []byte
+	err := c.q.db.QueryRow(`SELECT value FROM cache WHERE ns = ? AND key = ?`, c.ns, key).Scan(&v)
+	return v, err == nil
+}
+
+// Put stores value under key, replacing any previous value. Failures are
+// ignored: a cache that can't be written only costs a later lookup.
+func (c Cache) Put(key string, value []byte) {
+	c.q.db.Exec(`INSERT INTO cache (ns, key, value, updated_at) VALUES (?, ?, ?, ?)
+		ON CONFLICT(ns, key) DO UPDATE SET value = excluded.value, updated_at = excluded.updated_at`,
+		c.ns, key, value, time.Now().UTC())
 }
 
 // IsDownloaded reports whether an album (by ADM ReviewID) is already recorded

@@ -60,7 +60,7 @@ type Album struct {
 // folder, or a *ReviewError once a has been moved to the review folder. Any
 // other error (including filing.ErrNotMounted) leaves a where it was.
 func (o *Organizer) Organize(ctx context.Context, a Album) (string, error) {
-	if err := filing.CheckMounted(o.LibraryDir, o.LocalDir); err != nil {
+	if err := o.checkMounted(); err != nil {
 		return "", err
 	}
 	tracks := append([]tidal.Track(nil), a.Tracks...)
@@ -127,7 +127,7 @@ func (o *Organizer) Organize(ctx context.Context, a Album) (string, error) {
 
 	// The share can drop mid-batch; check again right before writing to it.
 	// An unmounted library is not the album's fault: leave it where it is.
-	if err := filing.CheckMounted(o.LibraryDir, o.LocalDir); err != nil {
+	if err := o.checkMounted(); err != nil {
 		return "", err
 	}
 	dest := filepath.Join(o.LibraryDir, filing.AlbumDir(fa))
@@ -144,33 +144,44 @@ func (o *Organizer) Organize(ctx context.Context, a Album) (string, error) {
 // genre picks the album's genres: Last.fm first, as lastfmng did, then the
 // release group's MusicBrainz genres when Last.fm yields no grouping.
 func (o *Organizer) genre(ctx context.Context, r musicbrainz.Release) genre.Result {
-	var g genre.Result
-	if o.LastFM != nil {
-		ga := genre.Album{AlbumArtist: musicbrainz.CreditName(r.ArtistCredit), Title: r.Title}
-		for _, t := range r.Tracks() {
-			credit := t.ArtistCredit
-			if len(credit) == 0 {
-				credit = r.ArtistCredit
-			}
-			ga.Tracks = append(ga.Tracks, genre.Track{Artist: musicbrainz.CreditName(credit), Title: t.Title})
+	ga := genre.Album{AlbumArtist: musicbrainz.CreditName(r.ArtistCredit), Title: r.Title}
+	for _, t := range r.Tracks() {
+		credit := t.ArtistCredit
+		if len(credit) == 0 {
+			credit = r.ArtistCredit
 		}
+		ga.Tracks = append(ga.Tracks, genre.Track{Artist: musicbrainz.CreditName(credit), Title: t.Title})
+	}
+	g, _ := o.genreFor(ctx, ga, func() []musicbrainz.Genre { return append(r.ReleaseGroup.Genres, r.Genres...) })
+	return g
+}
+
+// genreFor runs Last.fm for ga, then falls back to the MusicBrainz genres
+// mbGenres returns (called only if needed). source says which decided the
+// grouping: "last.fm", "musicbrainz" or "" when neither had one.
+func (o *Organizer) genreFor(ctx context.Context, ga genre.Album, mbGenres func() []musicbrainz.Genre) (g genre.Result, source string) {
+	if o.LastFM != nil {
 		var err error
 		if g, err = o.Lists.ForAlbum(ctx, o.LastFM, ga); err != nil {
 			o.logf("warning: Last.fm genres: %v; using MusicBrainz genres", err)
 		}
-	}
-	if g.Grouping == "" {
-		var tags []genre.Tag
-		for _, mg := range append(r.ReleaseGroup.Genres, r.Genres...) {
-			tags = append(tags, genre.Tag{Name: mg.Name, Score: float64(max(mg.Count, 1))})
-		}
-		mb := o.Lists.FromTags(tags)
-		g.Grouping = mb.Grouping
-		if len(g.Genres) == 0 {
-			g.Genres = mb.Genres
+		if g.Grouping != "" {
+			return g, "last.fm"
 		}
 	}
-	return g
+	var tags []genre.Tag
+	for _, mg := range mbGenres() {
+		tags = append(tags, genre.Tag{Name: mg.Name, Score: float64(max(mg.Count, 1))})
+	}
+	mb := o.Lists.FromTags(tags)
+	g.Grouping = mb.Grouping
+	if len(g.Genres) == 0 {
+		g.Genres = mb.Genres
+	}
+	if g.Grouping != "" {
+		source = "musicbrainz"
+	}
+	return g, source
 }
 
 // review moves the album folder to the review area and reports why.
@@ -219,6 +230,9 @@ func extras(dir string) []filing.Move {
 	}
 	return out
 }
+
+// checkMounted verifies the library share is mounted and writable.
+func (o *Organizer) checkMounted() error { return filing.CheckMounted(o.LibraryDir, o.LocalDir) }
 
 // removeDir deletes an album's working folder, then its artist folder if that
 // is now empty (Picard's delete_empty_dirs).

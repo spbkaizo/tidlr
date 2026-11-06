@@ -16,6 +16,12 @@ All notable changes to `tidlr` are documented here. This project adheres to
   Picard naming script. Albums that can't be identified, or are already in the
   library, are held in `review_dir` and listed by `tidlr status`.
 - New `review` queue state.
+- **`tidlr retag [DIR…]`** fixes the genre folder of albums already in the
+  library (by default everything under `Archive */Unknown`): genre from the
+  album's tags via Last.fm, then MusicBrainz; dry run unless `-apply`.
+- tidlr exits before downloading when `library_dir` isn't mounted or
+  writable, including a dropped share whose mount point is left behind as a
+  local folder, and stops mid-run if the share disappears.
 
 ## [1.9.0] — 2026-09-18
 

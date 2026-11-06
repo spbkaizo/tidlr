@@ -308,3 +308,19 @@ func TestTidalDownloadsSeparateFromADM(t *testing.T) {
 		t.Errorf("ADM review id leaked into Tidal library: have=%v err=%v", have, err)
 	}
 }
+
+func TestCache(t *testing.T) {
+	q := newTestQueue(t)
+	c := q.Cache("lastfm")
+	if _, ok := c.Get("k"); ok {
+		t.Fatal("empty cache returned a value")
+	}
+	c.Put("k", []byte("one"))
+	c.Put("k", []byte("two"))
+	if v, ok := c.Get("k"); !ok || string(v) != "two" {
+		t.Errorf("Get = %q, %v; want two", v, ok)
+	}
+	if _, ok := q.Cache("other").Get("k"); ok {
+		t.Error("namespaces are not separate")
+	}
+}

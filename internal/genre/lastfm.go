@@ -23,9 +23,20 @@ type LastFM struct {
 	// Interval is the minimum gap between requests (lastfmng used 200ms).
 	Interval time.Duration
 
+	// Store, if set, keeps tag lookups between runs. Only lookups that
+	// returned tags are stored: an album, artist or track Last.fm knows
+	// nothing about today may be tagged later, so those are asked again.
+	Store Store
+
 	mu    sync.Mutex
 	last  time.Time
 	cache map[string][]Tag
+}
+
+// Store is a persistent key-value cache.
+type Store interface {
+	Get(key string) ([]byte, bool)
+	Put(key string, value []byte)
 }
 
 // NewLastFM returns a client for the public API.
@@ -37,16 +48,29 @@ func NewLastFM(apiKey string) *LastFM {
 // "artist.gettoptags", "track.gettoptags") and its arguments. An unknown
 // album, artist or track yields no tags rather than an error.
 func (c *LastFM) TopTags(ctx context.Context, method string, args map[string]string) ([]Tag, error) {
-	params := url.Values{"method": {method}, "api_key": {c.APIKey}, "format": {"json"}, "autocorrect": {"0"}}
+	params := url.Values{"method": {method}}
 	for k, v := range args {
 		params.Set(k, v)
 	}
+	// The cache key leaves out the API key, so changing keys keeps the cache.
 	key := params.Encode()
+	params.Set("api_key", c.APIKey)
+	params.Set("format", "json")
+	params.Set("autocorrect", "0")
 
 	c.mu.Lock()
 	defer c.mu.Unlock()
 	if tags, ok := c.cache[key]; ok {
 		return tags, nil
+	}
+	if c.Store != nil {
+		if b, ok := c.Store.Get(key); ok {
+			var tags []Tag
+			if json.Unmarshal(b, &tags) == nil {
+				c.remember(key, tags)
+				return tags, nil
+			}
+		}
 	}
 	if d := time.Until(c.last.Add(c.Interval)); d > 0 {
 		select {
@@ -57,7 +81,7 @@ func (c *LastFM) TopTags(ctx context.Context, method string, args map[string]str
 	}
 	c.last = time.Now()
 
-	req, err := http.NewRequestWithContext(ctx, http.MethodGet, c.BaseURL+"?"+key, nil)
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, c.BaseURL+"?"+params.Encode(), nil)
 	if err != nil {
 		return nil, err
 	}
@@ -95,11 +119,20 @@ func (c *LastFM) TopTags(ctx context.Context, method string, args map[string]str
 		}
 		tags = append(tags, Tag{Name: t.Name, Score: float64(n)})
 	}
+	c.remember(key, tags)
+	if c.Store != nil && len(tags) > 0 {
+		if b, err := json.Marshal(tags); err == nil {
+			c.Store.Put(key, b)
+		}
+	}
+	return tags, nil
+}
+
+func (c *LastFM) remember(key string, tags []Tag) {
 	if c.cache == nil {
 		c.cache = map[string][]Tag{}
 	}
 	c.cache[key] = tags
-	return tags, nil
 }
 
 func trimQuotes(b []byte) []byte {

@@ -164,6 +164,8 @@ func main() {
 	cfgPath := flag.String("config", "config.toml", "path to TOML config file")
 	force := flag.Bool("force", false, "re-download albums already in the library, overwriting files")
 	since := flag.String("since", "", "scrape all albums added on/after this date (DDMMYY or DD/MM/YYYY)")
+	apply := flag.Bool("apply", false, "retag: make the changes (default is a dry run)")
+	limit := flag.Int("limit", 0, "retag: stop after this many albums (0 = all)")
 	playlist := flag.String("playlist", "", "download a Tidal playlist by URL or UUID into <output>/playlist/<name>")
 	var album, track stringList
 	flag.Var(&album, "album", "download a Tidal album by URL or ID into <output>/<artist>/<album> (repeatable)")
@@ -261,6 +263,8 @@ func main() {
 		}
 		log.Printf("requeued %d failed item(s)", n)
 		mustRun(ctx, cfg, q)
+	case "retag":
+		mustRetag(ctx, cfg, q, flag.Args()[1:], *apply, *limit)
 	case "status":
 		mustStatus(q)
 	default:
@@ -384,7 +388,7 @@ func mustRun(ctx context.Context, cfg config.Config, q *queue.Queue) {
 		DownloadWorkers:    downloadWorkers,
 		QuietDownloadStart: quietDownloadStart,
 		ConvertWorkers:     cfg.ConvertWorkers,
-		Organizer:          mustOrganizer(cfg, runLog),
+		Organizer:          mustOrganizer(cfg, runLog, q),
 		Log:                runLog,
 	}
 	if err := p.Run(ctx); err != nil && ctx.Err() == nil {
@@ -725,7 +729,7 @@ func mustAlbum(ctx context.Context, cfg config.Config, arg string, force bool) {
 	}
 
 	// Check the library first: no point downloading if it can't be filed.
-	org := mustOrganizer(cfg, log.Default())
+	org := mustOrganizer(cfg, log.Default(), q)
 	client := authedClient(ctx, cfg)
 	dl := &tidal.Downloader{Client: client, FFmpegBin: cfg.FFmpegBin, Threads: cfg.DownloadThreads, Log: log.Default()}
 	conv := &convert.Converter{FFmpegBin: cfg.FFmpegBin, OutputDir: cfg.OutputDir, KeepFLAC: cfg.KeepFLAC}
@@ -828,11 +832,89 @@ func downloadOneAlbum(ctx context.Context, cfg config.Config, dl *tidal.Download
 	return out, artist, albumName, nil
 }
 
+// mustRetag fixes the genre folder of albums already in the library: for
+// each album under dirs (default: every Archive */Unknown folder) it works
+// out the genre from the album's own tags via Last.fm (then MusicBrainz),
+// and with apply rewrites the genre tags and moves the album into its genre
+// folder. Without apply it only reports, which doubles as a check of how
+// often the genre logic agrees with folders lastfmng chose.
+func mustRetag(ctx context.Context, cfg config.Config, q *queue.Queue, dirs []string, apply bool, limit int) {
+	if cfg.LibraryDir == "" {
+		log.Fatalf("retag: set library_dir in the config first")
+	}
+	org := mustOrganizer(cfg, log.Default(), q)
+	if len(dirs) == 0 {
+		dirs, _ = filepath.Glob(filepath.Join(cfg.LibraryDir, "Archive *", "Unknown"))
+	}
+	var albums []string
+	for _, d := range dirs {
+		found, err := organize.AlbumDirs(d)
+		if err != nil {
+			log.Fatalf("retag: %v", err)
+		}
+		albums = append(albums, found...)
+	}
+	if limit > 0 && len(albums) > limit {
+		albums = albums[:limit]
+	}
+	if !apply {
+		log.Printf("dry run over %d albums (add -apply to make the changes)", len(albums))
+	}
+
+	moves, same, none, skipped, failed := 0, 0, 0, 0, 0
+	for i, dir := range albums {
+		if ctx.Err() != nil {
+			break
+		}
+		plan, err := org.PlanRetag(ctx, dir)
+		name := filepath.Base(dir)
+		switch {
+		case err != nil:
+			failed++
+			log.Printf("[%d/%d] %s: %v", i+1, len(albums), name, err)
+			continue
+		case plan.SkipNote != "":
+			skipped++
+			log.Printf("[%d/%d] skip %s: %s", i+1, len(albums), name, plan.SkipNote)
+			continue
+		case plan.Source == "":
+			none++
+			log.Printf("[%d/%d] %-18s no genre found          %s", i+1, len(albums), plan.Current, name)
+			continue
+		case !plan.Moves():
+			same++
+			log.Printf("[%d/%d] %-18s = (%s)  %s", i+1, len(albums), plan.Current, plan.Source, name)
+		default:
+			moves++
+			log.Printf("[%d/%d] %-18s -> %-18s (%s)  %s", i+1, len(albums), plan.Current, plan.Result.Grouping, plan.Source, name)
+		}
+		if apply {
+			if err := org.ApplyRetag(ctx, plan); err != nil {
+				failed++
+				log.Printf("    FAILED: %v", err)
+				if errors.Is(err, filing.ErrNotMounted) {
+					break
+				}
+			}
+		}
+	}
+	verb := "would move"
+	if apply {
+		verb = "moved"
+	}
+	log.Printf("retag: %d albums: %d %s, %d already in the right folder, %d no genre found, %d skipped, %d failed",
+		len(albums), moves, verb, same, none, skipped, failed)
+	if found := moves + same; found > 0 {
+		log.Printf("genre agreed with the current folder for %d of %d albums with a genre (%.0f%%)",
+			same, found, 100*float64(same)/float64(found))
+	}
+}
+
 // mustOrganizer builds the MusicBrainz tagger and filer from the config, or
 // returns nil when library_dir is unset (albums stay in output_dir as before).
 // It refuses to start when the library or AtomicParsley is missing, so a
 // batch never runs only to fail every album at the end.
-func mustOrganizer(cfg config.Config, logger *log.Logger) *organize.Organizer {
+func mustOrganizer(cfg config.Config, logger *log.Logger, q *queue.Queue) *organize.Organizer {
 	if cfg.LibraryDir == "" {
 		return nil
 	}
@@ -857,6 +939,9 @@ func mustOrganizer(cfg config.Config, logger *log.Logger) *organize.Organizer {
 	}
 	if cfg.LastFMAPIKey != "" {
 		o.LastFM = genre.NewLastFM(cfg.LastFMAPIKey)
+		if q != nil {
+			o.LastFM.Store = q.Cache("lastfm") // tags rarely change: keep them
+		}
 	} else {
 		logger.Printf("no lastfm_api_key: genre folders come from MusicBrainz genres")
 	}
@@ -1011,6 +1096,10 @@ Commands:
   run       Download + convert all pending queue items
   sync      requeue failed items, scrape, then run  (the everyday command)
   retry     Requeue failed items, then run (no scrape)
+  retag [DIR...]  Fix the genre folder of albums in library_dir: works out
+            each album's genre from its tags (Last.fm, then MusicBrainz) and
+            moves it. DIR defaults to every Archive */Unknown folder. Dry run
+            unless -apply; -limit N stops after N albums
   status    Show queue state counts
   version   Print the tidlr version
 

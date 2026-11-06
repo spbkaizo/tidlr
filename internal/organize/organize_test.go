@@ -143,3 +143,43 @@ func TestOrganizeStopsWhenLibraryUnmounted(t *testing.T) {
 		}
 	}
 }
+
+// An album Picard 3 filed under Unknown (no lastfmng) is planned into its
+// genre folder from its own tags, then moved and retagged on apply.
+func TestRetagUnknownAlbum(t *testing.T) {
+	o := organizer(t)
+	filed, err := o.Organize(context.Background(), downloaded(t, "440082667"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	unknown := filepath.Join(o.LibraryDir, "Archive Albums", "Unknown", filepath.Base(filed))
+	os.MkdirAll(filepath.Dir(unknown), 0o755)
+	if err := os.Rename(filed, unknown); err != nil {
+		t.Fatal(err)
+	}
+
+	dirs, err := AlbumDirs(o.LibraryDir)
+	if err != nil || len(dirs) != 1 || dirs[0] != unknown {
+		t.Fatalf("AlbumDirs = %q, %v; want [%s]", dirs, err, unknown)
+	}
+	plan, err := o.PlanRetag(context.Background(), unknown)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if plan.Current != "Unknown" || plan.Result.Grouping != "Psychedelic Rock" || plan.Source != "musicbrainz" || plan.NewDir != filed {
+		t.Fatalf("plan = %+v", plan)
+	}
+	if err := o.ApplyRetag(context.Background(), plan); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := os.Stat(filepath.Join(filed, "01 - Trinidad.m4a")); err != nil {
+		t.Errorf("not moved back into its genre folder: %v", err)
+	}
+	if _, err := os.Stat(filepath.Dir(unknown)); !os.IsNotExist(err) {
+		t.Error("empty Unknown folder left behind")
+	}
+	tags, _ := o.Tagger.Read(context.Background(), filepath.Join(filed, "05 - Islands of Men.m4a"))
+	if tags["albumgrouping"] != "Psychedelic Rock" || tags["©grp"] != "Psychedelic Rock" {
+		t.Errorf("grouping tags = %q / %q", tags["albumgrouping"], tags["©grp"])
+	}
+}
