@@ -1,0 +1,131 @@
+{
+ "album": {
+  "id": 440082667,
+  "title": "Getting Killed",
+  "artist": {
+   "id": 3578350,
+   "name": "Geese",
+   "handle": null,
+   "type": "MAIN",
+   "picture": "c66bfd0e-1bb4-41c1-ac09-ea5f95c57391"
+  },
+  "numberOfTracks": 11,
+  "numberOfVolumes": 1,
+  "releaseDate": "2025-09-26",
+  "upc": "5400863191436"
+ },
+ "items": {
+  "items": [
+   {
+    "item": {
+     "id": 440082670,
+     "title": "Trinidad",
+     "trackNumber": 1,
+     "volumeNumber": 1,
+     "duration": 225,
+     "isrc": "USBQU2500076"
+    }
+   },
+   {
+    "item": {
+     "id": 440082671,
+     "title": "Cobra",
+     "trackNumber": 2,
+     "volumeNumber": 1,
+     "duration": 185,
+     "isrc": "USBQU2500077"
+    }
+   },
+   {
+    "item": {
+     "id": 440082672,
+     "title": "Husbands",
+     "trackNumber": 3,
+     "volumeNumber": 1,
+     "duration": 248,
+     "isrc": "USBQU2500078"
+    }
+   },
+   {
+    "item": {
+     "id": 440082673,
+     "title": "Getting Killed",
+     "trackNumber": 4,
+     "volumeNumber": 1,
+     "duration": 285,
+     "isrc": "USBQU2500079"
+    }
+   },
+   {
+    "item": {
+     "id": 440082675,
+     "title": "Islands of Men",
+     "trackNumber": 5,
+     "volumeNumber": 1,
+     "duration": 354,
+     "isrc": "USBQU2500080"
+    }
+   },
+   {
+    "item": {
+     "id": 440082676,
+     "title": "100 Horses",
+     "trackNumber": 6,
+     "volumeNumber": 1,
+     "duration": 226,
+     "isrc": "USBQU2500081"
+    }
+   },
+   {
+    "item": {
+     "id": 440082677,
+     "title": "Half Real",
+     "trackNumber": 7,
+     "volumeNumber": 1,
+     "duration": 202,
+     "isrc": "USBQU2500082"
+    }
+   },
+   {
+    "item": {
+     "id": 440082678,
+     "title": "Au Pays du Cocaine",
+     "trackNumber": 8,
+     "volumeNumber": 1,
+     "duration": 211,
+     "isrc": "USBQU2500083"
+    }
+   },
+   {
+    "item": {
+     "id": 440082679,
+     "title": "Bow Down",
+     "trackNumber": 9,
+     "volumeNumber": 1,
+     "duration": 208,
+     "isrc": "USBQU2500084"
+    }
+   },
+   {
+    "item": {
+     "id": 440082680,
+     "title": "Taxes",
+     "trackNumber": 10,
+     "volumeNumber": 1,
+     "duration": 198,
+     "isrc": "USBQU2500085"
+    }
+   },
+   {
+    "item": {
+     "id": 440082682,
+     "title": "Long Island City Here I Come",
+     "trackNumber": 11,
+     "volumeNumber": 1,
+     "duration": 397,
+     "isrc": "USBQU2500086"
+    }
+   }
+  ]
+ }
+}

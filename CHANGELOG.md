@@ -3,6 +3,45 @@
 All notable changes to `tidlr` are documented here. This project adheres to
 [Semantic Versioning](https://semver.org).
 
+## [Unreleased]
+
+### Added
+
+- **MusicBrainz tagging and filing** (`library_dir`). Each downloaded album
+  is identified on MusicBrainz (barcode, then ISRCs, then name search, checked
+  against the downloaded track list), given a genre from Last.fm the way the
+  lastfmng Picard plugin does (`lastfm_api_key`; MusicBrainz genres
+  otherwise), tagged via AtomicParsley with the tags Picard writes, and filed
+  by `library_layout`: `artist` (`<Artist>/<Year> - <Album>/`, the default)
+  or `genre` (`Archive Albums/<Genre>/<Artist> - <Year> - <Album>/`). Genre
+  lists are built in (ID3 names, MusicBrainz's CC0 genre list, common moods);
+  the lastfmng plugin's lists are used when installed. Albums that can't be
+  identified, or are already in the library, are held in `review_dir` and
+  listed by `tidlr status`.
+- Albums already in the library under a slightly different name ("&" vs
+  "and", a "(Deluxe)" or "[Explicit]" edition) are recognised: a queued
+  album found there is skipped before downloading (unless `--force`), and
+  one that is downloaded anyway is held for review instead of filed twice.
+- MusicBrainz identification accepts a release with one track in eight a
+  few seconds out (another master, a longer fade) when the album otherwise
+  agrees closely, and retries a failed artist + title search by title alone.
+- New `review` queue state, and **`tidlr file DIR RELEASE`** to file an
+  album held for review as the MusicBrainz release you pick.
+- `genre_merge` collapses near-duplicate genre folders (e.g. Punk Rock into
+  Punk); `keep_artist_together` (default on) files an album with the
+  artist's other albums rather than splitting an artist across folders.
+- **`tidlr retag [DIR…]`** refreshes the genre of albums already in the
+  library, from the album's tags via Last.fm, then MusicBrainz, and in the
+  `genre` layout moves them to the right genre folder (by default it checks
+  every `Archive */Unknown` folder); dry run unless `-apply`.
+  When the target folder is a shell an earlier move left behind (rip logs,
+  cover art, no audio), those files join the album rather than blocking it.
+- With `library_dir` set, tidlr checks its tools before starting: it exits
+  when AtomicParsley is missing or Last.fm rejects `lastfm_api_key`.
+- tidlr exits before downloading when `library_dir` isn't mounted or
+  writable, including a dropped share whose mount point is left behind as a
+  local folder, and stops mid-run if the share disappears.
+
 ## [1.9.0] — 2026-09-18
 
 ### Added

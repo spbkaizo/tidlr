@@ -7,6 +7,7 @@ import (
 	"context"
 
 	"github.com/simonb/tidlr/internal/adm"
+	"github.com/simonb/tidlr/internal/tidal"
 )
 
 // Result is the outcome of a successful download.
@@ -18,6 +19,10 @@ type Result struct {
 	// taken as a fallback. This tells the converter whether to transcode FLAC
 	// to ALAC or pass the files through unchanged.
 	Lossless bool
+	// Album and Tracks are Tidal's metadata for what was downloaded, used to
+	// identify and tag the album afterwards.
+	Album  tidal.Album
+	Tracks []tidal.Track
 }
 
 // ErrNoMatch indicates the release could not be confidently matched to any

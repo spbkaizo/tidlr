@@ -76,5 +76,5 @@ func (n *Native) Download(ctx context.Context, r adm.Release) (Result, error) {
 
 	// m.Lossless (the edition's capability) and the actual delivered format
 	// should agree; trust the downloader's observation of what landed on disk.
-	return Result{AudioDir: res.Dir, Lossless: res.Lossless}, nil
+	return Result{AudioDir: res.Dir, Lossless: res.Lossless, Album: res.Album, Tracks: res.TrackList}, nil
 }

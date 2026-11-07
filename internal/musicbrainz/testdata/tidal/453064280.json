@@ -1,0 +1,141 @@
+{
+ "album": {
+  "id": 453064280,
+  "title": "Baby",
+  "artist": {
+   "id": 9177293,
+   "name": "Dijon",
+   "handle": null,
+   "type": "MAIN",
+   "picture": "b3615de7-7bbd-4e70-961e-cc0ec99fd008"
+  },
+  "numberOfTracks": 12,
+  "numberOfVolumes": 1,
+  "releaseDate": "2025-11-14",
+  "upc": "093624827870"
+ },
+ "items": {
+  "items": [
+   {
+    "item": {
+     "id": 453064288,
+     "title": "Baby!",
+     "trackNumber": 1,
+     "volumeNumber": 1,
+     "duration": 220,
+     "isrc": "USWB12503070"
+    }
+   },
+   {
+    "item": {
+     "id": 453064290,
+     "title": "Another Baby!",
+     "trackNumber": 2,
+     "volumeNumber": 1,
+     "duration": 208,
+     "isrc": "USWB12503071"
+    }
+   },
+   {
+    "item": {
+     "id": 453064291,
+     "title": "HIGHER!",
+     "trackNumber": 3,
+     "volumeNumber": 1,
+     "duration": 238,
+     "isrc": "USWB12503072"
+    }
+   },
+   {
+    "item": {
+     "id": 453064292,
+     "title": "(Freak It)",
+     "trackNumber": 4,
+     "volumeNumber": 1,
+     "duration": 104,
+     "isrc": "USWB12503073"
+    }
+   },
+   {
+    "item": {
+     "id": 453064293,
+     "title": "Yamaha",
+     "trackNumber": 5,
+     "volumeNumber": 1,
+     "duration": 268,
+     "isrc": "USWB12502589"
+    }
+   },
+   {
+    "item": {
+     "id": 453064294,
+     "title": "FIRE!",
+     "trackNumber": 6,
+     "volumeNumber": 1,
+     "duration": 160,
+     "isrc": "USWB12503074"
+    }
+   },
+   {
+    "item": {
+     "id": 453064296,
+     "title": "(Referee)",
+     "trackNumber": 7,
+     "volumeNumber": 1,
+     "duration": 66,
+     "isrc": "USWB12503075"
+    }
+   },
+   {
+    "item": {
+     "id": 453064297,
+     "title": "Rewind",
+     "trackNumber": 8,
+     "volumeNumber": 1,
+     "duration": 153,
+     "isrc": "USWB12503076"
+    }
+   },
+   {
+    "item": {
+     "id": 453064299,
+     "title": "my man",
+     "trackNumber": 9,
+     "volumeNumber": 1,
+     "duration": 239,
+     "isrc": "USWB12503077"
+    }
+   },
+   {
+    "item": {
+     "id": 453064300,
+     "title": "loyal & marie",
+     "trackNumber": 10,
+     "volumeNumber": 1,
+     "duration": 153,
+     "isrc": "USWB12503078"
+    }
+   },
+   {
+    "item": {
+     "id": 453064301,
+     "title": "Automatic",
+     "trackNumber": 11,
+     "volumeNumber": 1,
+     "duration": 178,
+     "isrc": "USWB12503079"
+    }
+   },
+   {
+    "item": {
+     "id": 453064302,
+     "title": "Kindalove",
+     "trackNumber": 12,
+     "volumeNumber": 1,
+     "duration": 277,
+     "isrc": "USWB12503080"
+    }
+   }
+  ]
+ }
+}

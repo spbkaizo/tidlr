@@ -8,6 +8,8 @@ import (
 	"path/filepath"
 
 	"github.com/BurntSushi/toml"
+
+	"github.com/simonb/tidlr/internal/filing"
 )
 
 // Config holds all tunable settings for the pipeline.
@@ -46,22 +48,52 @@ type Config struct {
 	// serially — set it false to keep DownloadWorkers albums in flight instead.
 	// It is a no-op on a non-TTY, where DownloadWorkers is honoured regardless.
 	Progress bool `toml:"progress"`
+
+	// LibraryDir, when set, has each downloaded album identified on
+	// MusicBrainz, tagged with the tags Picard writes, and filed under
+	// LibraryDir as LibraryLayout says. Empty keeps albums in OutputDir with
+	// basic tags only.
+	LibraryDir string `toml:"library_dir"`
+	// LibraryLayout is "artist" (<Artist>/<Year> - <Album>/, the default) or
+	// "genre" (Archive Albums/<Genre>/<Artist> - <Year> - <Album>/).
+	LibraryLayout filing.Layout `toml:"library_layout"`
+	// ReviewDir holds albums that could not be identified or filed, with
+	// their basic tags. Default <OutputDir>/_review.
+	ReviewDir string `toml:"review_dir"`
+	// LastFMAPIKey enables genre (and so genre-folder) lookup on Last.fm, as
+	// the lastfmng Picard plugin did. Without it genres come from MusicBrainz.
+	LastFMAPIKey string `toml:"lastfm_api_key"`
+	// LastFMNGDefaults is the lastfmng Picard plugin's defaults.ini, read for
+	// its genre lists. Empty finds it in Picard's plugin folder if installed;
+	// otherwise the built-in lists are used (ID3 genre names for the folder,
+	// MusicBrainz's genre list for genres).
+	LastFMNGDefaults string `toml:"lastfmng_defaults"`
+	// AtomicParsleyBin writes the MusicBrainz tags (brew install atomicparsley).
+	AtomicParsleyBin string `toml:"atomicparsley_bin"`
+	// GenreMerge maps genre folders onto others, collapsing near duplicates
+	// ("Punk Rock" = "Punk").
+	GenreMerge map[string]string `toml:"genre_merge"`
+	// KeepArtistTogether files an album with the artist's other albums when
+	// their folder is also one of the album's own genres. Default true.
+	KeepArtistTogether bool `toml:"keep_artist_together"`
 }
 
 // Default returns a Config populated with the project's chosen defaults.
 func Default() Config {
 	home, _ := os.UserHomeDir()
 	return Config{
-		OutputDir:       filepath.Join(home, "Music", "tidlr"),
-		WorkDir:         filepath.Join(home, ".local", "share", "tidlr"),
-		FFmpegBin:       "ffmpeg",
-		AuthFile:        "", // empty => tidal.DefaultAuthPath() (~/.tiddl/auth.json)
-		Quality:         "max",
-		DownloadThreads: 8,
-		DownloadWorkers: 3,
-		ConvertWorkers:  4,
-		KeepFLAC:        false,
-		Progress:        true,
+		OutputDir:          filepath.Join(home, "Music", "tidlr"),
+		WorkDir:            filepath.Join(home, ".local", "share", "tidlr"),
+		FFmpegBin:          "ffmpeg",
+		AuthFile:           "", // empty => tidal.DefaultAuthPath() (~/.tiddl/auth.json)
+		Quality:            "max",
+		DownloadThreads:    8,
+		DownloadWorkers:    3,
+		ConvertWorkers:     4,
+		KeepFLAC:           false,
+		Progress:           true,
+		AtomicParsleyBin:   "AtomicParsley",
+		KeepArtistTogether: true,
 	}
 }
 
@@ -81,6 +113,17 @@ func Load(path string) (Config, error) {
 	cfg.OutputDir = expandHome(cfg.OutputDir)
 	cfg.WorkDir = expandHome(cfg.WorkDir)
 	cfg.AuthFile = expandHome(cfg.AuthFile)
+	cfg.LibraryDir = expandHome(cfg.LibraryDir)
+	cfg.ReviewDir = expandHome(cfg.ReviewDir)
+	cfg.LastFMNGDefaults = expandHome(cfg.LastFMNGDefaults)
+	if cfg.ReviewDir == "" {
+		cfg.ReviewDir = filepath.Join(cfg.OutputDir, "_review")
+	}
+	layout, err := filing.ParseLayout(string(cfg.LibraryLayout))
+	if err != nil {
+		return cfg, fmt.Errorf("%s: %w", path, err)
+	}
+	cfg.LibraryLayout = layout
 	return cfg, nil
 }
 

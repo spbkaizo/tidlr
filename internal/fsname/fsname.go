@@ -51,3 +51,7 @@ func truncateBytes(s string, n int) string {
 	}
 	return s[:cut]
 }
+
+// Truncate shortens s to at most n bytes without splitting a rune, for callers
+// that apply their own character rules but still need the byte cap.
+func Truncate(s string, n int) string { return truncateBytes(s, n) }

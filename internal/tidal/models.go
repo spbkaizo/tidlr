@@ -23,6 +23,11 @@ type Album struct {
 	NumberOfTracks int      `json:"numberOfTracks"`
 	ReleaseDate    string   `json:"releaseDate"` // "YYYY-MM-DD"
 	Cover          string   `json:"cover"`       // image UUID
+	// UPC is the release barcode, the most exact key for finding the album on
+	// MusicBrainz.
+	UPC             string `json:"upc"`
+	Copyright       string `json:"copyright"`
+	NumberOfVolumes int    `json:"numberOfVolumes"`
 }
 
 // ArtistName returns the primary artist name, preferring the singular artist
@@ -106,8 +111,12 @@ type Track struct {
 	Title        string     `json:"title"`
 	TrackNumber  int        `json:"trackNumber"`
 	VolumeNumber int        `json:"volumeNumber"`
-	Duration     int        `json:"duration"`
+	Duration     int        `json:"duration"` // seconds
 	Explicit     bool       `json:"explicit"`
+	ISRC         string     `json:"isrc"`
+	Copyright    string     `json:"copyright"`
+	ReplayGain   float64    `json:"replayGain"`
+	Peak         float64    `json:"peak"`
 	Artist       Artist     `json:"artist"`
 	Artists      []Artist   `json:"artists"`
 	Album        TrackAlbum `json:"album"`

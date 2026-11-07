@@ -28,6 +28,10 @@ const (
 	// StateFailed, RequeueFailed leaves these alone, so they stop churning on
 	// every `retry`.
 	StateSkipped State = "skipped"
+	// StateReview means the album downloaded but could not be identified or
+	// filed in the library; it waits in the review folder for a person.
+	// Permanent like StateSkipped: retrying would only download it again.
+	StateReview State = "review"
 )
 
 // Item is one album in the queue.
@@ -103,6 +107,16 @@ func (q *Queue) migrate() error {
 		-- (tidlr --album). Kept separate from the downloads table because that is
 		-- keyed by ADM review id: the two id spaces are unrelated and sharing a
 		-- primary key would let an ADM review id collide with a Tidal album id.
+		-- Lookups worth keeping between runs (e.g. Last.fm tags), by
+		-- namespace and key.
+		CREATE TABLE IF NOT EXISTS cache (
+			ns         TEXT NOT NULL,
+			key        TEXT NOT NULL,
+			value      BLOB NOT NULL,
+			updated_at TIMESTAMP NOT NULL,
+			PRIMARY KEY (ns, key)
+		);
+
 		CREATE TABLE IF NOT EXISTS tidal_downloads (
 			album_id       INTEGER PRIMARY KEY,
 			artist         TEXT NOT NULL,
@@ -112,6 +126,30 @@ func (q *Queue) migrate() error {
 		);
 	`)
 	return err
+}
+
+// Cache is a persistent key-value store in one namespace of the database.
+type Cache struct {
+	q  *Queue
+	ns string
+}
+
+// Cache returns the store for namespace ns.
+func (q *Queue) Cache(ns string) Cache { return Cache{q, ns} }
+
+// Get returns the value stored under key.
+func (c Cache) Get(key string) ([]byte, bool) {
+	var v []byte
+	err := c.q.db.QueryRow(`SELECT value FROM cache WHERE ns = ? AND key = ?`, c.ns, key).Scan(&v)
+	return v, err == nil
+}
+
+// Put stores value under key, replacing any previous value. Failures are
+// ignored: a cache that can't be written only costs a later lookup.
+func (c Cache) Put(key string, value []byte) {
+	c.q.db.Exec(`INSERT INTO cache (ns, key, value, updated_at) VALUES (?, ?, ?, ?)
+		ON CONFLICT(ns, key) DO UPDATE SET value = excluded.value, updated_at = excluded.updated_at`,
+		c.ns, key, value, time.Now().UTC())
 }
 
 // IsDownloaded reports whether an album (by ADM ReviewID) is already recorded
@@ -314,13 +352,44 @@ func (q *Queue) Fail(reviewID int, cause error) error {
 // Skip marks an item permanently skipped: a retry cannot help, so RequeueFailed
 // will not pick it up again. Used when no Tidal album matches the ADM title.
 func (q *Queue) Skip(reviewID int, cause error) error {
+	return q.finish(reviewID, StateSkipped, cause)
+}
+
+// Review marks an item held for review: downloaded, but not identified or
+// filed in the library. Like Skip it is permanent, recording why.
+func (q *Queue) Review(reviewID int, cause error) error {
+	return q.finish(reviewID, StateReview, cause)
+}
+
+// finish moves an item to a terminal state, recording the cause.
+func (q *Queue) finish(reviewID int, state State, cause error) error {
 	msg := ""
 	if cause != nil {
 		msg = cause.Error()
 	}
 	_, err := q.db.Exec(`UPDATE items SET state=?, last_error=?, updated_at=? WHERE review_id=?`,
-		StateSkipped, msg, time.Now().UTC(), reviewID)
+		state, msg, time.Now().UTC(), reviewID)
 	return err
+}
+
+// InState returns the items in a state, oldest first.
+func (q *Queue) InState(state State) ([]Item, error) {
+	rows, err := q.db.Query(`
+		SELECT review_id, artist, album, review_url, state, attempts, last_error, flac_dir, created_at, updated_at
+		FROM items WHERE state = ? ORDER BY updated_at`, state)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var out []Item
+	for rows.Next() {
+		it, err := scanItem(rows)
+		if err != nil {
+			return nil, err
+		}
+		out = append(out, *it)
+	}
+	return out, rows.Err()
 }
 
 // RequeueFailed moves all failed items back to pending so a subsequent run

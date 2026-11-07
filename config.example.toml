@@ -40,3 +40,45 @@ keep_flac = false
 # with plain one-line-per-album logging instead. Ignored on a non-TTY
 # (redirected output, cron), where download_workers always applies.
 progress = true
+
+# --- Tagging and filing with MusicBrainz -------------------------------------
+# Set library_dir to have each downloaded album identified on MusicBrainz,
+# tagged the way Picard tags (MusicBrainz ids, label, barcode, original date,
+# genre/grouping/mood...) and filed in the library. Leave it empty to keep
+# albums in output_dir with basic tags only.
+# Needs AtomicParsley: brew install atomicparsley
+#library_dir = "/Volumes/music/FLAC"
+
+# How albums are arranged under library_dir:
+#   "artist" (default)  <Artist>/<Year> - <Album>/NN - Title.m4a
+#   "genre"             Archive Albums/<Genre>/<Artist> - <Year> - <Album>/NN - Title.m4a
+#                       (soundtracks under "Archive Soundtracks", Various
+#                       Artists compilations under "Archive Compilations")
+#library_layout = "artist"
+
+# Albums that cannot be identified on MusicBrainz, or that are already in the
+# library, are held here with their basic tags. Default: <output_dir>/_review
+#review_dir = "~/Music/tidlr/_review"
+
+# Last.fm API key (free: https://www.last.fm/api/account/create). With it, the
+# genre folder is chosen from Last.fm tags exactly as the lastfmng Picard
+# plugin did; without it, from MusicBrainz genres.
+#lastfm_api_key = ""
+
+# Genre lists. Built in: ID3 genre names choose the main genre, MusicBrainz's
+# genre list the rest. If the lastfmng Picard plugin is installed in Picard's
+# plugin folder its lists are used instead; point here to use another copy.
+#lastfmng_defaults = "~/Library/Preferences/MusicBrainz/Picard/plugins/lastfmng/defaults.ini"
+
+#atomicparsley_bin = "AtomicParsley"
+
+# Collapse near-duplicate genre folders: albums whose genre is the key are
+# filed under the value instead (and retag moves them there).
+#[genre_merge]
+#"Punk Rock" = "Punk"
+
+# genre layout only. File an album with the artist's other albums: among the
+# artist's folders that are also one of the album's own genres, the one
+# holding most of their albums wins. Niche albums stay in niche folders unless tagged otherwise.
+# Unknown is ignored, as are Various Artists compilations.
+#keep_artist_together = true

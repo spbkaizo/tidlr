@@ -57,3 +57,7 @@ func longestMatch(a, b []rune) (starti, startj, length int) {
 	}
 	return starti, startj, length
 }
+
+// Similarity is the exported form of similarityRatio, for matching names
+// outside Tidal (e.g. a local library against ADM's chart).
+func Similarity(a, b string) float64 { return similarityRatio(a, b) }

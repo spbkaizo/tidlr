@@ -16,10 +16,12 @@ package main
 
 import (
 	"context"
+	"errors"
 	"flag"
 	"fmt"
 	"log"
 	"os"
+	"os/exec"
 	"os/signal"
 	"path/filepath"
 	"regexp"
@@ -37,8 +39,13 @@ import (
 	"github.com/simonb/tidlr/internal/config"
 	"github.com/simonb/tidlr/internal/convert"
 	"github.com/simonb/tidlr/internal/downloader"
+	"github.com/simonb/tidlr/internal/filing"
+	"github.com/simonb/tidlr/internal/genre"
+	"github.com/simonb/tidlr/internal/musicbrainz"
+	"github.com/simonb/tidlr/internal/organize"
 	"github.com/simonb/tidlr/internal/pipeline"
 	"github.com/simonb/tidlr/internal/queue"
+	"github.com/simonb/tidlr/internal/tagger"
 	"github.com/simonb/tidlr/internal/tidal"
 )
 
@@ -157,6 +164,8 @@ func main() {
 	cfgPath := flag.String("config", "config.toml", "path to TOML config file")
 	force := flag.Bool("force", false, "re-download albums already in the library, overwriting files")
 	since := flag.String("since", "", "scrape all albums added on/after this date (DDMMYY or DD/MM/YYYY)")
+	apply := flag.Bool("apply", false, "retag: make the changes (default is a dry run)")
+	limit := flag.Int("limit", 0, "retag: stop after this many albums (0 = all)")
 	playlist := flag.String("playlist", "", "download a Tidal playlist by URL or UUID into <output>/playlist/<name>")
 	var album, track stringList
 	flag.Var(&album, "album", "download a Tidal album by URL or ID into <output>/<artist>/<album> (repeatable)")
@@ -236,7 +245,7 @@ func main() {
 	case "scrape":
 		mustScrape(ctx, q, sinceTime, *force)
 	case "run":
-		mustRun(ctx, cfg, q)
+		mustRun(ctx, cfg, q, *force)
 	case "sync":
 		n, err := q.RequeueFailed()
 		if err != nil {
@@ -246,14 +255,18 @@ func main() {
 			log.Printf("requeued %d failed item(s) from previous run", n)
 		}
 		mustScrape(ctx, q, sinceTime, *force)
-		mustRun(ctx, cfg, q)
+		mustRun(ctx, cfg, q, *force)
 	case "retry":
 		n, err := q.RequeueFailed()
 		if err != nil {
 			log.Fatalf("retry: %v", err)
 		}
 		log.Printf("requeued %d failed item(s)", n)
-		mustRun(ctx, cfg, q)
+		mustRun(ctx, cfg, q, *force)
+	case "retag":
+		mustRetag(ctx, cfg, q, flag.Args()[1:], *apply, *limit)
+	case "file":
+		mustFile(ctx, cfg, q, flag.Args()[1:])
 	case "status":
 		mustStatus(q)
 	default:
@@ -302,7 +315,8 @@ func mustScrape(ctx context.Context, q *queue.Queue, since time.Time, force bool
 	}
 }
 
-func mustRun(ctx context.Context, cfg config.Config, q *queue.Queue) {
+func mustRun(ctx context.Context, cfg config.Config, q *queue.Queue, force bool) {
+	mustLibraryMounted(cfg) // before any download, so nothing is fetched in vain
 	auth, err := tidal.LoadAuth(cfg.AuthPath())
 	if err != nil {
 		log.Fatalf("Tidal auth: %v (run `tidlr login`)", err)
@@ -376,7 +390,11 @@ func mustRun(ctx context.Context, cfg config.Config, q *queue.Queue) {
 		DownloadWorkers:    downloadWorkers,
 		QuietDownloadStart: quietDownloadStart,
 		ConvertWorkers:     cfg.ConvertWorkers,
+		Force:              force,
 		Log:                runLog,
+	}
+	if org := mustOrganizer(cfg, runLog, q); org != nil {
+		p.Organizer = org
 	}
 	if err := p.Run(ctx); err != nil && ctx.Err() == nil {
 		log.Fatalf("run: %v", err)
@@ -715,6 +733,8 @@ func mustAlbum(ctx context.Context, cfg config.Config, arg string, force bool) {
 		defer q.Close()
 	}
 
+	// Check the library first: no point downloading if it can't be filed.
+	org := mustOrganizer(cfg, log.Default(), q)
 	client := authedClient(ctx, cfg)
 	dl := &tidal.Downloader{Client: client, FFmpegBin: cfg.FFmpegBin, Threads: cfg.DownloadThreads, Log: log.Default()}
 	conv := &convert.Converter{FFmpegBin: cfg.FFmpegBin, OutputDir: cfg.OutputDir, KeepFLAC: cfg.KeepFLAC}
@@ -740,7 +760,12 @@ func mustAlbum(ctx context.Context, cfg config.Config, arg string, force bool) {
 			}
 		}
 		log.Printf("[%d/%d] downloading album %d ...", i+1, len(ids), albumID)
-		out, artist, album, err := downloadOneAlbum(ctx, cfg, dl, conv, scratch, albumID)
+		out, artist, album, err := downloadOneAlbum(ctx, cfg, dl, conv, org, scratch, albumID)
+		if errors.Is(err, filing.ErrNotMounted) || errors.Is(err, musicbrainz.ErrUnavailable) {
+			failed++
+			log.Printf("[%d/%d] stopping: %v", i+1, len(ids), err)
+			break
+		}
 		if err != nil {
 			failed++
 			log.Printf("[%d/%d] FAILED album %d: %v", i+1, len(ids), albumID, err)
@@ -777,7 +802,7 @@ func dedupeIDs(ids []int64) []int64 {
 
 // downloadOneAlbum downloads and converts a single album; errors are returned
 // (not fatal) so a batch can continue.
-func downloadOneAlbum(ctx context.Context, cfg config.Config, dl *tidal.Downloader, conv *convert.Converter, scratch string, albumID int64) (outDir, artist, albumName string, err error) {
+func downloadOneAlbum(ctx context.Context, cfg config.Config, dl *tidal.Downloader, conv *convert.Converter, org *organize.Organizer, scratch string, albumID int64) (outDir, artist, albumName string, err error) {
 	prog := newAlbumProgress(dl.Threads)
 	dl.OnAlbumStart = prog.onAlbumStart
 	dl.OnTrackStart = prog.onTrackStart
@@ -794,8 +819,230 @@ func downloadOneAlbum(ctx context.Context, cfg config.Config, dl *tidal.Download
 		return "", "", "", err
 	}
 	os.RemoveAll(res.Dir)
+	if org != nil {
+		dest, err := org.Organize(ctx, organize.Album{Dir: out, Tidal: res.Album, Tracks: res.TrackList})
+		var rev *organize.ReviewError
+		switch {
+		case errors.As(err, &rev):
+			// Downloaded but not filed: report it, and count it as had so a
+			// rerun does not fetch it again.
+			log.Printf("review: album %q — %q: %s (at %s)", artist, albumName, rev.Reason, rev.Dir)
+			return rev.Dir, artist, albumName, nil
+		case err != nil:
+			return "", "", "", fmt.Errorf("filing: %w (album left at %s)", err, out)
+		}
+		out = dest
+	}
 	log.Printf("done: album %q — %q -> %s", artist, albumName, out)
 	return out, artist, albumName, nil
+}
+
+// mustRetag fixes the genre of albums already in the library: for each
+// album under dirs (default: every Archive */Unknown folder in the genre
+// layout, the whole library otherwise) it works out the genre from the
+// album's own tags via Last.fm (then MusicBrainz), and with apply rewrites
+// the genre tags and, in the genre layout, moves the album into its genre
+// folder. Without apply it only reports, which doubles as a check of how
+// often the genre logic agrees with folders lastfmng chose.
+func mustRetag(ctx context.Context, cfg config.Config, q *queue.Queue, dirs []string, apply bool, limit int) {
+	if cfg.LibraryDir == "" {
+		log.Fatalf("retag: set library_dir in the config first")
+	}
+	org := mustOrganizer(cfg, log.Default(), q)
+	if len(dirs) == 0 && cfg.LibraryLayout.ByGenre() {
+		dirs, _ = filepath.Glob(filepath.Join(cfg.LibraryDir, "Archive *", "Unknown"))
+	} else if len(dirs) == 0 {
+		dirs = []string{cfg.LibraryDir}
+	}
+	var albums []string
+	for _, d := range dirs {
+		found, err := organize.AlbumDirs(d)
+		if err != nil {
+			log.Fatalf("retag: %v", err)
+		}
+		albums = append(albums, found...)
+	}
+	if limit > 0 && len(albums) > limit {
+		albums = albums[:limit]
+	}
+	if !apply {
+		log.Printf("dry run over %d albums (add -apply to make the changes)", len(albums))
+	}
+
+	moves, same, none, skipped, failed := 0, 0, 0, 0, 0
+	for i, dir := range albums {
+		if ctx.Err() != nil {
+			break
+		}
+		plan, err := org.PlanRetag(ctx, dir)
+		name := filepath.Base(dir)
+		switch {
+		case err != nil:
+			failed++
+			log.Printf("[%d/%d] %s: %v", i+1, len(albums), name, err)
+			continue
+		case plan.SkipNote != "":
+			skipped++
+			log.Printf("[%d/%d] skip %s: %s", i+1, len(albums), name, plan.SkipNote)
+			continue
+		case plan.Source == "":
+			none++
+			log.Printf("[%d/%d] %-18s no genre found          %s", i+1, len(albums), plan.Current, name)
+			continue
+		case !plan.Moves():
+			same++
+			log.Printf("[%d/%d] %-18s = (%s)  %s", i+1, len(albums), plan.Current, plan.Source, name)
+		default:
+			moves++
+			log.Printf("[%d/%d] %-18s -> %-18s (%s)  %s", i+1, len(albums), plan.Current, plan.Result.Grouping, plan.Source, name)
+		}
+		if apply {
+			if err := org.ApplyRetag(ctx, plan); err != nil {
+				failed++
+				log.Printf("    FAILED: %v", err)
+				if errors.Is(err, filing.ErrNotMounted) {
+					break
+				}
+			}
+		}
+	}
+	verb := "would move"
+	if apply {
+		verb = "moved"
+	}
+	log.Printf("retag: %d albums: %d %s, %d already in the right folder, %d no genre found, %d skipped, %d failed",
+		len(albums), moves, verb, same, none, skipped, failed)
+	if found := moves + same; found > 0 {
+		log.Printf("genre agreed with the current folder for %d of %d albums with a genre (%.0f%%)",
+			same, found, 100*float64(same)/float64(found))
+	}
+}
+
+// mustOrganizer builds the MusicBrainz tagger and filer from the config, or
+// returns nil when library_dir is unset (albums stay in output_dir as before).
+// It refuses to start when the library or AtomicParsley is missing, so a
+// batch never runs only to fail every album at the end.
+func mustOrganizer(cfg config.Config, logger *log.Logger, q *queue.Queue) *organize.Organizer {
+	if cfg.LibraryDir == "" {
+		return nil
+	}
+	home := mustLibraryMounted(cfg)
+	if _, err := exec.LookPath(cfg.AtomicParsleyBin); err != nil {
+		log.Fatalf("library_dir needs AtomicParsley to write tags: brew install atomicparsley (%v)", err)
+	}
+	lists := genre.Builtin()
+	path := cfg.LastFMNGDefaults
+	if path == "" {
+		path = genre.FindLastFMNG()
+	}
+	if path != "" {
+		var err error
+		if lists, err = genre.Load(path); err != nil {
+			log.Fatalf("lastfmng_defaults: %v", err)
+		}
+		logger.Printf("genre lists: lastfmng (%s)", path)
+	}
+	o := &organize.Organizer{
+		MB:         musicbrainz.New("tidlr", appVersion()),
+		Prefs:      musicbrainz.DefaultPrefs,
+		Lists:      lists,
+		Tagger:     tagger.Writer{Bin: cfg.AtomicParsleyBin},
+		LibraryDir: cfg.LibraryDir,
+		Layout:     cfg.LibraryLayout,
+		ReviewDir:  cfg.ReviewDir,
+		LocalDir:   home,
+
+		Merge:              cfg.GenreMerge,
+		KeepArtistTogether: cfg.KeepArtistTogether,
+		Log:                logger,
+	}
+	if cfg.LastFMAPIKey != "" {
+		o.LastFM = genre.NewLastFM(cfg.LastFMAPIKey)
+		ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+		err := o.LastFM.CheckKey(ctx)
+		cancel()
+		switch {
+		case errors.Is(err, genre.ErrBadKey):
+			log.Fatalf("lastfm_api_key: %v", err)
+		case err != nil:
+			logger.Printf("warning: could not reach Last.fm to check the API key: %v", err)
+		}
+		if q != nil {
+			o.LastFM.Store = q.Cache("lastfm") // tags rarely change: keep them
+		}
+	} else {
+		logger.Printf("no lastfm_api_key: genre folders come from MusicBrainz genres")
+	}
+	return o
+}
+
+// mbidRe finds a MusicBrainz id, alone or in a musicbrainz.org URL.
+var mbidRe = regexp.MustCompile(`[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}`)
+
+// mustFile files an album held for review (or any album folder) as the
+// MusicBrainz release the user identified, and marks its queue item done.
+func mustFile(ctx context.Context, cfg config.Config, q *queue.Queue, args []string) {
+	if len(args) != 2 {
+		log.Fatalf("usage: tidlr file DIR RELEASE  (RELEASE: MusicBrainz release id or URL)")
+	}
+	if cfg.LibraryDir == "" {
+		log.Fatalf("file: set library_dir in the config first")
+	}
+	dir, err := filepath.Abs(args[0])
+	if err != nil {
+		log.Fatalf("file: %v", err)
+	}
+	mbid := mbidRe.FindString(strings.ToLower(args[1]))
+	if mbid == "" {
+		log.Fatalf("file: %q is not a MusicBrainz release id or URL", args[1])
+	}
+	mustLibraryMounted(cfg)
+	org := mustOrganizer(cfg, log.Default(), q)
+	dest, err := org.FileAs(ctx, dir, mbid)
+	if err != nil {
+		log.Fatalf("file: %v", err)
+	}
+	log.Printf("filed at %s", dest)
+
+	// The queue item held for review records where the album was held.
+	held, err := q.InState(queue.StateReview)
+	if err != nil {
+		log.Fatalf("file: %v", err)
+	}
+	for _, it := range held {
+		if strings.HasSuffix(it.LastError, " at "+dir) {
+			if err := q.MarkDownloaded(it.ReviewID, it.Artist, it.Album, dest); err != nil {
+				log.Fatalf("file: %v", err)
+			}
+			if err := q.SetState(it.ReviewID, queue.StateDone); err != nil {
+				log.Fatalf("file: %v", err)
+			}
+		}
+	}
+}
+
+// mustLibraryMounted exits when library_dir is set but its share is not
+// mounted (or not writable), returning the home folder used for the check.
+func mustLibraryMounted(cfg config.Config) string {
+	home, _ := os.UserHomeDir()
+	if cfg.LibraryDir == "" {
+		return home
+	}
+	if err := filing.CheckMounted(cfg.LibraryDir, home); err != nil {
+		log.Fatalf("library_dir: %v", err)
+	}
+	return home
+}
+
+// appVersion is the short version for User-Agent strings.
+func appVersion() string {
+	switch {
+	case version != "":
+		return version
+	case baseVersion != "":
+		return baseVersion + "-dev"
+	}
+	return "dev"
 }
 
 // mustTrack downloads one or more individual Tidal tracks (space/comma-separated
@@ -888,7 +1135,7 @@ func mustStatus(q *queue.Queue) {
 	// state would silently vanish from the count.
 	order := []queue.State{
 		queue.StatePending, queue.StateDownloading, queue.StateConverting,
-		queue.StateDone, queue.StateFailed, queue.StateSkipped,
+		queue.StateDone, queue.StateFailed, queue.StateSkipped, queue.StateReview,
 	}
 	fmt.Println("queue:")
 	total := 0
@@ -897,6 +1144,17 @@ func mustStatus(q *queue.Queue) {
 		total += counts[s]
 	}
 	fmt.Printf("  %-12s %d\n", "total", total)
+
+	review, err := q.InState(queue.StateReview)
+	if err != nil {
+		log.Fatalf("status: %v", err)
+	}
+	if len(review) > 0 {
+		fmt.Println("\nheld for review:")
+		for _, it := range review {
+			fmt.Printf("  %s — %s\n    %s\n", it.Artist, it.Album, it.LastError)
+		}
+	}
 }
 
 func usage() {
@@ -911,7 +1169,15 @@ Commands:
   run       Download + convert all pending queue items
   sync      requeue failed items, scrape, then run  (the everyday command)
   retry     Requeue failed items, then run (no scrape)
-  status    Show queue state counts
+  retag [DIR...]  Refresh the genre of albums in library_dir, worked out
+            from their tags (Last.fm, then MusicBrainz); in the genre layout
+            also move each to its genre folder. DIR defaults to every
+            Archive */Unknown folder (genre layout) or the whole library.
+            Dry run unless -apply; -limit N stops after N albums
+  file DIR RELEASE  File an album held for review as the MusicBrainz release
+            you choose (its id or musicbrainz.org/release/... URL): tags it
+            and moves it into library_dir like any new album
+  status    Show queue state counts, and albums held for review
   version   Print the tidlr version
 
 Flags:

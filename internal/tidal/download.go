@@ -42,6 +42,11 @@ type DownloadResult struct {
 	Dir      string // directory containing the track files (+ cover.jpg)
 	Lossless bool
 	Tracks   int
+	// Album and TrackList are Tidal's metadata for what was downloaded, for
+	// tagging against MusicBrainz afterwards. Each track's file is named
+	// TrackFilename(track) plus its extension.
+	Album     Album
+	TrackList []Track
 }
 
 // Downloader downloads whole albums from Tidal to local disk.
@@ -162,7 +167,7 @@ func (d *Downloader) DownloadAlbum(ctx context.Context, albumID int64, quality, 
 	if !anyDelivered {
 		return DownloadResult{}, fmt.Errorf("album %d: no tracks delivered", albumID)
 	}
-	return DownloadResult{Dir: albumDir, Lossless: allLossless, Tracks: len(tracks)}, nil
+	return DownloadResult{Dir: albumDir, Lossless: allLossless, Tracks: len(tracks), Album: album, TrackList: tracks}, nil
 }
 
 // albumTracks pages through the album's track listing.
@@ -652,6 +657,10 @@ func (d *Downloader) fetchCover(ctx context.Context, coverUID, path string) erro
 
 // trackFilename builds a stable, sortable file base like "01 - Title" (or
 // "1-01 - Title" for multi-disc albums, using the volume number).
+// TrackFilename is the base name (no extension) a downloaded album track is
+// written under.
+func TrackFilename(tr Track) string { return trackFilename(tr) }
+
 func trackFilename(tr Track) string {
 	num := fmt.Sprintf("%02d", tr.TrackNumber)
 	if tr.VolumeNumber > 1 {

@@ -17,7 +17,7 @@ type Match struct {
 	Artist       string
 	Mode         string // primary audioMode (STEREO, DOLBY_ATMOS, ...)
 	Explicit     bool
-	Lossless     bool  // true => downloadable as lossless FLAC
+	Lossless     bool // true => downloadable as lossless FLAC
 	Score        float64
 	FromSearchID int64 // the album search returned before edition upgrade
 	Upgraded     bool  // true if we swapped to a better edition than search's hit
@@ -46,6 +46,9 @@ func normalize(s string) string {
 	s = wsRe.ReplaceAllString(s, " ")
 	return strings.TrimSpace(s)
 }
+
+// Normalize is the exported form of normalize.
+func Normalize(s string) string { return normalize(s) }
 
 // isLossless reports whether the album is downloadable as lossless FLAC: it must
 // carry a STEREO mode (Atmos-only comes as lossy EAC3) and a lossless quality.

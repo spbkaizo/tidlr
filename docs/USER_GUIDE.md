@@ -243,6 +243,115 @@ mid-flight are recovered automatically, and `tidlr retry` picks up failures.
 The scratch download area (partial FLACs before conversion) also lives under
 `~/.local/share/tidlr/` and is cleaned up automatically.
 
+### Tagging and filing with MusicBrainz
+
+Set `library_dir` in `config.toml` and each downloaded album is identified,
+tagged and filed into your library. The tags are the ones MusicBrainz Picard
+writes, under the same names, so Picard (and anything that reads Picard's
+tags) sees tidlr's albums as already matched, and albums filed by either
+sit side by side.
+
+1. **Identified on MusicBrainz**: by the album's barcode, then by its tracks'
+   ISRCs, then by artist, title and track count. A release is accepted only if
+   its track list matches what was downloaded: the same number of tracks,
+   lengths within 3 seconds (one track in eight may be up to 10 seconds out,
+   as another master often is, if the rest agree closely). Among several matches the preference is: most matching
+   ISRCs, official status, country GB > XW > US, Digital Media > CD, then the
+   earliest release.
+2. **Given a genre**: from Last.fm tags (this needs `lastfm_api_key`),
+   weighted across the album, its artists and its tracks the way Picard's
+   lastfmng plugin does. Without the key, or when Last.fm has nothing, the
+   genre comes from MusicBrainz's genres. Tags are sorted against built-in
+   lists: ID3 genre names for the main genre (the `genre` layout's folder),
+   MusicBrainz's genre list for further genres, and common mood tags. If
+   Picard's lastfmng plugin is installed, its own lists are used instead,
+   found automatically or set with `lastfmng_defaults`.
+3. **Tagged** with Picard's tag set: MusicBrainz ids, label, catalogue number,
+   barcode, media, release type, status and country, original date, ISRC,
+   sort names, and grouping, genre and mood. Multi-valued tags are joined with
+   `; `. Cover art stays the 1280px Tidal cover.
+4. **Filed** under `library_dir`, arranged by `library_layout`:
+
+   | `library_layout` | Path |
+   |---|---|
+   | `artist` (default) | `<Artist>/<Year> - <Album>/NN - Title.m4a` |
+   | `genre` | `Archive Albums/<Genre>/<Artist> - <Year> - <Album>/NN - Title.m4a` |
+
+   In the `genre` layout, soundtracks go under `Archive Soundtracks`, Various
+   Artists compilations under `Archive Compilations`, and an album with no
+   genre under `Unknown`. In both, multi-disc albums number tracks `101`,
+   `102`, … `201`; `:` `?` `*` `|` `"` `<` `>` become `~`, and a trailing `.`
+   on a folder name becomes `_`, as in Picard. `cover.jpg` and any `.lrc`
+   files move with the album.
+
+```toml
+library_dir    = "/Volumes/music/FLAC"
+library_layout = "genre"   # or "artist", the default
+lastfm_api_key = "…"       # free: https://www.last.fm/api/account/create
+```
+
+An album that can't be identified, or whose folder already exists in the
+library, is **held for review** in `review_dir` (default
+`<output_dir>/_review`) with its basic tags, and is never overwritten. It
+counts as downloaded, so it isn't fetched again. `tidlr status` lists held
+albums with the reason.
+
+To file a held album, find its release on [musicbrainz.org](https://musicbrainz.org)
+and give tidlr the folder and the release's id or URL:
+
+```sh
+tidlr file ~/Music/tidlr/_review/Geese/"Getting Killed" https://musicbrainz.org/release/2b637090-036e-4f86-8183-e1be856e1421
+```
+
+It is tagged, given a genre and filed like any new album. The release must
+have as many tracks as the folder; tracks are matched in disc and track
+order. If anything is wrong the album stays where it is.
+
+tidlr checks that `library_dir` is mounted and writable before starting, so a
+run with the network share unmounted exits straight away instead of
+downloading albums it can't file. For a library under `/Volumes`, `/mnt` or
+`/media` it also checks the folder really is a separate filesystem: a share
+that has dropped can leave its mount point behind as an ordinary local folder,
+and tidlr won't fill your local disk through it. The check repeats before each
+album is filed; if the share drops mid-run, tidlr stops starting new albums and
+leaves the current one in `output_dir`.
+
+Tagging needs AtomicParsley (`brew install atomicparsley`).
+
+#### Fixing genres of existing albums
+
+`tidlr retag` works out the genre of albums already in the library from their
+own tags (Last.fm, then the MusicBrainz genres of the release they're tagged
+with) and rewrites their genre tags. In the `genre` layout it also moves them
+into the right genre folder; only the genre part of the path changes. It's a
+dry run unless you add `-apply`:
+
+```sh
+tidlr retag                                  # plan: every Archive */Unknown folder (genre layout),
+                                             # or the whole library (artist layout)
+tidlr -apply retag                           # do it
+tidlr -limit 20 retag "/Volumes/music/FLAC/Archive Albums/Indie"   # check a folder
+```
+
+Two settings shape the choice of genre, for new downloads and `retag`
+alike:
+
+- `genre_merge` collapses near-duplicate genre folders, e.g.
+  `"Punk Rock" = "Punk"`, so albums stop moving between the two.
+- `keep_artist_together` (on by default; `genre` layout only) files an album with the artist's
+  other albums, gently: among the artist's folders that are also one of the
+  album's own genres, the one holding most of their albums wins (ties go to
+  the album's genre, then its current folder). So a jungle album by an artist
+  mostly filed under Electronic stays in Jungle unless the album itself is
+  tagged electronic. An album with no genre at all joins its artist's folder.
+  Artists are matched by the `Artist - Year - Album` folder names; `Unknown`
+  and Various Artists compilations don't count.
+
+The report ends with how often the computed genre agreed with an album's
+current folder, a quick check against folders chosen earlier. Albums with no
+genre from either source stay where they are, and an existing folder is never
+overwritten.
+
 ---
 
 ## 9. Configuration reference
@@ -267,6 +376,13 @@ it with `--config <path>`.
 | `download_workers` | `3`                 | How many albums download at once (pipeline mode).              |
 | `convert_workers`  | `4`                 | How many albums convert at once (pipeline mode).               |
 | `keep_flac`        | `false`             | Also deliver the source FLACs next to the ALAC.                |
+| `library_dir`      | (empty)             | Tag with MusicBrainz and file albums here ([details](#tagging-and-filing-with-musicbrainz)). |
+| `library_layout`   | `artist`            | `artist` or `genre` folder arrangement under `library_dir`.    |
+| `review_dir`       | `<output_dir>/_review` | Albums that couldn't be identified or filed.                |
+| `lastfm_api_key`   | (empty)             | Genres from Last.fm; without it, from MusicBrainz.             |
+| `atomicparsley_bin`| `AtomicParsley`     | Path to AtomicParsley, which writes the MusicBrainz tags.      |
+| `genre_merge`      | (none)              | Table mapping one genre onto another, e.g. `"Punk Rock" = "Punk"`. |
+| `keep_artist_together` | `true`          | `genre` layout: keep an artist's albums in one genre folder.   |
 
 `~` at the start of a path is expanded to your home directory.
 

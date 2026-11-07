@@ -1,0 +1,191 @@
+{
+ "album": {
+  "id": 20556792,
+  "title": "good kid, m.A.A.d city (Deluxe)",
+  "artist": {
+   "id": 3816041,
+   "name": "Kendrick Lamar",
+   "handle": null,
+   "type": "MAIN",
+   "picture": "84d81b7a-a12e-4a3e-bda4-d0527cb1c8cf"
+  },
+  "numberOfTracks": 17,
+  "numberOfVolumes": 2,
+  "releaseDate": "2012-10-22",
+  "upc": "00602537439508"
+ },
+ "items": {
+  "items": [
+   {
+    "item": {
+     "id": 20556793,
+     "title": "Sherane a.k.a Master Splinter’s Daughter",
+     "trackNumber": 1,
+     "volumeNumber": 1,
+     "duration": 274,
+     "isrc": "USUM71210773"
+    }
+   },
+   {
+    "item": {
+     "id": 20556794,
+     "title": "Bitch, Don’t Kill My Vibe",
+     "trackNumber": 2,
+     "volumeNumber": 1,
+     "duration": 311,
+     "isrc": "USUM71210774"
+    }
+   },
+   {
+    "item": {
+     "id": 20556795,
+     "title": "Backseat Freestyle",
+     "trackNumber": 3,
+     "volumeNumber": 1,
+     "duration": 213,
+     "isrc": "USUM71210777"
+    }
+   },
+   {
+    "item": {
+     "id": 20556796,
+     "title": "The Art of Peer Pressure",
+     "trackNumber": 4,
+     "volumeNumber": 1,
+     "duration": 325,
+     "isrc": "USUM71210778"
+    }
+   },
+   {
+    "item": {
+     "id": 20556797,
+     "title": "Money Trees",
+     "trackNumber": 5,
+     "volumeNumber": 1,
+     "duration": 387,
+     "isrc": "USUM71210785"
+    }
+   },
+   {
+    "item": {
+     "id": 20556798,
+     "title": "Poetic Justice",
+     "trackNumber": 6,
+     "volumeNumber": 1,
+     "duration": 300,
+     "isrc": "USUM71211004"
+    }
+   },
+   {
+    "item": {
+     "id": 20556799,
+     "title": "good kid",
+     "trackNumber": 7,
+     "volumeNumber": 1,
+     "duration": 214,
+     "isrc": "USUM71211006"
+    }
+   },
+   {
+    "item": {
+     "id": 20556800,
+     "title": "m.A.A.d city",
+     "trackNumber": 8,
+     "volumeNumber": 1,
+     "duration": 350,
+     "isrc": "USUM71210784"
+    }
+   },
+   {
+    "item": {
+     "id": 20556801,
+     "title": "Swimming Pools (Drank)",
+     "trackNumber": 9,
+     "volumeNumber": 1,
+     "duration": 314,
+     "isrc": "USUM71211089"
+    }
+   },
+   {
+    "item": {
+     "id": 20556802,
+     "title": "Sing About Me, I'm Dying Of Thirst",
+     "trackNumber": 10,
+     "volumeNumber": 1,
+     "duration": 724,
+     "isrc": "USUM71210783"
+    }
+   },
+   {
+    "item": {
+     "id": 20556803,
+     "title": "Real",
+     "trackNumber": 11,
+     "volumeNumber": 1,
+     "duration": 443,
+     "isrc": "USUM71211005"
+    }
+   },
+   {
+    "item": {
+     "id": 20556804,
+     "title": "Compton",
+     "trackNumber": 12,
+     "volumeNumber": 1,
+     "duration": 248,
+     "isrc": "USUM71210779"
+    }
+   },
+   {
+    "item": {
+     "id": 20556805,
+     "title": "The Recipe",
+     "trackNumber": 1,
+     "volumeNumber": 2,
+     "duration": 353,
+     "isrc": "USUM71203149"
+    }
+   },
+   {
+    "item": {
+     "id": 20556806,
+     "title": "Black Boy Fly",
+     "trackNumber": 2,
+     "volumeNumber": 2,
+     "duration": 279,
+     "isrc": "USUM71210776"
+    }
+   },
+   {
+    "item": {
+     "id": 20556807,
+     "title": "Now Or Never",
+     "trackNumber": 3,
+     "volumeNumber": 2,
+     "duration": 256,
+     "isrc": "USUM71210775"
+    }
+   },
+   {
+    "item": {
+     "id": 20556808,
+     "title": "Bitch, Don’t Kill My Vibe",
+     "trackNumber": 4,
+     "volumeNumber": 2,
+     "duration": 279,
+     "isrc": "USUM71302802"
+    }
+   },
+   {
+    "item": {
+     "id": 20556809,
+     "title": "Bitch, Don’t Kill My Vibe",
+     "trackNumber": 5,
+     "volumeNumber": 2,
+     "duration": 306,
+     "isrc": "USUM71306361"
+    }
+   }
+  ]
+ }
+}
