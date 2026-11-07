@@ -7,6 +7,7 @@ package musicbrainz
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"net/http"
@@ -70,9 +71,8 @@ func (c *Client) get(ctx context.Context, path string, params url.Values, out an
 	params.Set("fmt", "json")
 	u := c.BaseURL + "/" + path + "?" + params.Encode()
 
-	const attempts = 5
 	var lastErr error
-	for attempt := 1; attempt <= attempts; attempt++ {
+	for attempt := 0; ; attempt++ {
 		if err := c.wait(ctx); err != nil {
 			return err
 		}
@@ -84,14 +84,25 @@ func (c *Client) get(ctx context.Context, path string, params url.Values, out an
 		if !retry || ctx.Err() != nil {
 			return err
 		}
+		if attempt == len(RetryWaits) {
+			return fmt.Errorf("%w: %v", ErrUnavailable, lastErr)
+		}
 		select {
 		case <-ctx.Done():
 			return ctx.Err()
-		case <-time.After(time.Duration(attempt) * 2 * time.Second):
+		case <-time.After(RetryWaits[attempt]):
 		}
 	}
-	return lastErr
 }
+
+// RetryWaits are the pauses before retrying a request that failed in a way
+// worth trying again (network errors, 5xx, 429): about four minutes in all,
+// enough to ride out MusicBrainz's usual overload spells.
+var RetryWaits = []time.Duration{5 * time.Second, 15 * time.Second, 30 * time.Second, 60 * time.Second, 120 * time.Second}
+
+// ErrUnavailable means MusicBrainz could not be reached, or kept failing,
+// through every retry: an outage, not an answer about the album.
+var ErrUnavailable = errors.New("musicbrainz unavailable")
 
 // do performs one request; retry reports whether a failure is worth retrying.
 func (c *Client) do(ctx context.Context, u string, out any) (retry bool, err error) {
@@ -111,7 +122,7 @@ func (c *Client) do(ctx context.Context, u string, out any) (retry bool, err err
 		return false, json.NewDecoder(resp.Body).Decode(out)
 	case resp.StatusCode == http.StatusNotFound:
 		return false, ErrNotFound
-	case resp.StatusCode == http.StatusServiceUnavailable || resp.StatusCode >= 500:
+	case resp.StatusCode >= 500 || resp.StatusCode == http.StatusTooManyRequests:
 		io.Copy(io.Discard, resp.Body)
 		return true, fmt.Errorf("musicbrainz: HTTP %d", resp.StatusCode)
 	default:

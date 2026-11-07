@@ -72,7 +72,8 @@ type Album struct {
 
 // Organize identifies, tags and files a. It returns the album's library
 // folder, or a *ReviewError once a has been moved to the review folder. Any
-// other error (including filing.ErrNotMounted) leaves a where it was.
+// other error (including filing.ErrNotMounted and
+// musicbrainz.ErrUnavailable) leaves a where it was.
 func (o *Organizer) Organize(ctx context.Context, a Album) (string, error) {
 	if err := o.checkMounted(); err != nil {
 		return "", err
@@ -101,6 +102,10 @@ func (o *Organizer) Organize(ctx context.Context, a Album) (string, error) {
 	match, err := o.MB.Identify(ctx, want, o.Prefs)
 	if errors.Is(err, musicbrainz.ErrNoMatch) {
 		return o.review(a, "no MusicBrainz release matches")
+	}
+	if errors.Is(err, musicbrainz.ErrUnavailable) {
+		// An outage says nothing about the album: leave it for a retry.
+		return "", err
 	}
 	if err != nil {
 		return o.review(a, "MusicBrainz lookup failed: "+err.Error())

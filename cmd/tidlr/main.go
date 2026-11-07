@@ -758,7 +758,7 @@ func mustAlbum(ctx context.Context, cfg config.Config, arg string, force bool) {
 		}
 		log.Printf("[%d/%d] downloading album %d ...", i+1, len(ids), albumID)
 		out, artist, album, err := downloadOneAlbum(ctx, cfg, dl, conv, org, scratch, albumID)
-		if errors.Is(err, filing.ErrNotMounted) {
+		if errors.Is(err, filing.ErrNotMounted) || errors.Is(err, musicbrainz.ErrUnavailable) {
 			failed++
 			log.Printf("[%d/%d] stopping: %v", i+1, len(ids), err)
 			break

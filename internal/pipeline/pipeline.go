@@ -16,6 +16,7 @@ import (
 	"github.com/simonb/tidlr/internal/convert"
 	"github.com/simonb/tidlr/internal/downloader"
 	"github.com/simonb/tidlr/internal/filing"
+	"github.com/simonb/tidlr/internal/musicbrainz"
 	"github.com/simonb/tidlr/internal/organize"
 	"github.com/simonb/tidlr/internal/queue"
 )
@@ -146,9 +147,11 @@ func (p *Pipeline) runConvert(ctx context.Context, item queue.Item, res download
 
 	if p.Organizer != nil {
 		dest, err := p.Organizer.Organize(ctx, organize.Album{Dir: out, Tidal: res.Album, Tracks: res.Tracks})
-		if errors.Is(err, filing.ErrNotMounted) {
-			// The library vanished mid-run. Stop starting new albums; this
-			// one stays converted in the output folder and is retried later.
+		if errors.Is(err, filing.ErrNotMounted) || errors.Is(err, musicbrainz.ErrUnavailable) {
+			// The library vanished, or MusicBrainz is down, mid-run: every
+			// album after this one would fail the same way. Stop starting
+			// new albums; this one stays converted in the output folder and
+			// is retried later (`tidlr retry`).
 			p.halt.Do(func() { p.logf("stopping: %v; pending albums stay queued", err) })
 			p.halted.Store(true)
 			p.Queue.Fail(item.ReviewID, err)
