@@ -101,13 +101,7 @@ func (l Layout) AlbumDir(a Album) string {
 	if artist == "" {
 		artist = a.Artist
 	}
-	year := "0000"
-	for _, y := range []string{a.OriginalYear, a.OriginalDate, a.Date} {
-		if y != "" {
-			year = left(y, 4)
-			break
-		}
-	}
+	year := Year(a)
 	album := strings.ReplaceAll(value(a.Title), "...", "…")
 	if !l.ByGenre() {
 		return filepath.Join(clean(value(artist), year+" - "+album)...)
@@ -118,6 +112,17 @@ func (l Layout) AlbumDir(a Album) string {
 	}
 	name := value(artist) + " - " + year + " - " + album
 	return filepath.Join(clean(Subdir(a), value(grouping), name)...)
+}
+
+// Year is the album's year as folder names show it: the original release
+// year, "0000" when unknown.
+func Year(a Album) string {
+	for _, y := range []string{a.OriginalYear, a.OriginalDate, a.Date} {
+		if y != "" {
+			return left(y, 4)
+		}
+	}
+	return "0000"
 }
 
 // TrackFile is a track's file name (without extension). Multi-disc albums

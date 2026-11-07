@@ -38,6 +38,9 @@ type Pipeline struct {
 	// Organizer, if set, identifies, tags and files each converted album in
 	// the library (replacing Picard). Nil keeps albums where convert put them.
 	Organizer *organize.Organizer
+	// Force downloads albums the library already has (--force); otherwise
+	// an album found there, loosely matched by name, is skipped.
+	Force bool
 
 	halted atomic.Bool // set when the library becomes unreachable
 	halt   sync.Once
@@ -100,6 +103,18 @@ func (p *Pipeline) Run(ctx context.Context) error {
 
 func (p *Pipeline) runDownload(ctx context.Context, item queue.Item) (downloader.Result, bool) {
 	r := adm.Release{ReviewID: item.ReviewID, Artist: item.Artist, Album: item.Album, ReviewURL: item.ReviewURL}
+	if p.Organizer != nil && !p.Force {
+		if dir, ok := p.Organizer.InLibrary(item.Artist, item.Album, ""); ok {
+			p.logf("skipped (in library): %s — %s at %s", item.Artist, item.Album, dir)
+			if err := p.Queue.MarkDownloaded(item.ReviewID, item.Artist, item.Album, dir); err != nil {
+				p.logf("mark downloaded: %v", err)
+			}
+			if err := p.Queue.SetState(item.ReviewID, queue.StateDone); err != nil {
+				p.logf("set done: %v", err)
+			}
+			return downloader.Result{}, false
+		}
+	}
 	if !p.QuietDownloadStart {
 		p.logf("downloading: %s — %s", item.Artist, item.Album)
 	}

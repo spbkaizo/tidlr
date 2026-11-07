@@ -245,7 +245,7 @@ func main() {
 	case "scrape":
 		mustScrape(ctx, q, sinceTime, *force)
 	case "run":
-		mustRun(ctx, cfg, q)
+		mustRun(ctx, cfg, q, *force)
 	case "sync":
 		n, err := q.RequeueFailed()
 		if err != nil {
@@ -255,14 +255,14 @@ func main() {
 			log.Printf("requeued %d failed item(s) from previous run", n)
 		}
 		mustScrape(ctx, q, sinceTime, *force)
-		mustRun(ctx, cfg, q)
+		mustRun(ctx, cfg, q, *force)
 	case "retry":
 		n, err := q.RequeueFailed()
 		if err != nil {
 			log.Fatalf("retry: %v", err)
 		}
 		log.Printf("requeued %d failed item(s)", n)
-		mustRun(ctx, cfg, q)
+		mustRun(ctx, cfg, q, *force)
 	case "retag":
 		mustRetag(ctx, cfg, q, flag.Args()[1:], *apply, *limit)
 	case "file":
@@ -315,7 +315,7 @@ func mustScrape(ctx context.Context, q *queue.Queue, since time.Time, force bool
 	}
 }
 
-func mustRun(ctx context.Context, cfg config.Config, q *queue.Queue) {
+func mustRun(ctx context.Context, cfg config.Config, q *queue.Queue, force bool) {
 	mustLibraryMounted(cfg) // before any download, so nothing is fetched in vain
 	auth, err := tidal.LoadAuth(cfg.AuthPath())
 	if err != nil {
@@ -391,6 +391,7 @@ func mustRun(ctx context.Context, cfg config.Config, q *queue.Queue) {
 		QuietDownloadStart: quietDownloadStart,
 		ConvertWorkers:     cfg.ConvertWorkers,
 		Organizer:          mustOrganizer(cfg, runLog, q),
+		Force:              force,
 		Log:                runLog,
 	}
 	if err := p.Run(ctx); err != nil && ctx.Err() == nil {

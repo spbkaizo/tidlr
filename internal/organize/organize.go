@@ -49,6 +49,8 @@ type Organizer struct {
 
 	artists     *artistIndex
 	artistsOnce sync.Once
+	library     *libraryIndex
+	libraryOnce sync.Once
 
 	Log *log.Logger
 }
@@ -168,6 +170,12 @@ func (o *Organizer) file(ctx context.Context, r musicbrainz.Release, dir string,
 		fa.Grouping = g.Grouping
 	}
 
+	dest := filepath.Join(o.LibraryDir, o.Layout.AlbumDir(fa))
+	// Already filed under a slightly different name: don't file it twice.
+	if have, ok := o.InLibrary(fa.AlbumArtist, fa.Title, filing.Year(fa)); ok && have != dest {
+		return "", &holdError{"already in the library at " + have}
+	}
+
 	var moves []filing.Move
 	for i, f := range files {
 		tags, err := tagger.FromRelease(r, i, g, sources[i])
@@ -187,7 +195,6 @@ func (o *Organizer) file(ctx context.Context, r musicbrainz.Release, dir string,
 	if err := o.checkMounted(); err != nil {
 		return "", err
 	}
-	dest := filepath.Join(o.LibraryDir, o.Layout.AlbumDir(fa))
 	if err := filing.Place(dest, moves); err != nil {
 		if errors.Is(err, filing.ErrExists) {
 			return "", &holdError{"already in the library at " + dest}
@@ -196,6 +203,9 @@ func (o *Organizer) file(ctx context.Context, r musicbrainz.Release, dir string,
 	}
 	if o.artists != nil {
 		o.artists.add(dest)
+	}
+	if o.library != nil {
+		o.library.add(fa.AlbumArtist, fa.Title, filing.Year(fa), dest)
 	}
 	removeDir(dir)
 	return dest, nil
