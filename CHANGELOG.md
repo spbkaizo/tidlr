@@ -21,6 +21,9 @@ All notable changes to `tidlr` are documented here. This project adheres to
   "and", a "(Deluxe)" or "[Explicit]" edition) are recognised: a queued
   album found there is skipped before downloading (unless `--force`), and
   one that is downloaded anyway is held for review instead of filed twice.
+- MusicBrainz identification accepts a release with one track in eight a
+  few seconds out (another master, a longer fade) when the album otherwise
+  agrees closely, and retries a failed artist + title search by title alone.
 - New `review` queue state, and **`tidlr file DIR RELEASE`** to file an
   album held for review as the MusicBrainz release you pick.
 - `genre_merge` collapses near-duplicate genre folders (e.g. Punk Rock into

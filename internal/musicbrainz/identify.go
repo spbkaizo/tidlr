@@ -50,10 +50,15 @@ type Match struct {
 // rate limit.
 const maxCandidates = 8
 
-// lengthTolerance is how far a track's length may differ from MusicBrainz's,
-// in milliseconds. Tidal reports whole seconds, so allow for rounding plus
-// small mastering differences.
-const lengthTolerance = 3000
+// Track lengths are compared in milliseconds. Tidal reports whole seconds,
+// and a reissue or another master often moves one track by a few seconds (a
+// longer fade, a hidden track), so one outlier in eight may differ by up to
+// maxOutlier as long as the album as a whole agrees closely.
+const (
+	lengthTolerance = 3000  // a track within this agrees
+	maxOutlier      = 10000 // no track may differ by more
+	maxMeanDiff     = 2000  // the average difference across the album
+)
 
 // Identify finds the MusicBrainz release for want: by barcode, then by the
 // releases containing its first ISRCs, then by artist and title search. Each
@@ -161,33 +166,45 @@ func (c *Client) isrcCandidates(ctx context.Context, want Want) ([]string, error
 }
 
 // searchCandidates searches by artist, title and track count, keeping hits
-// whose names are close to want's.
+// whose names are close to want's. If that finds nothing it searches by
+// title and track count alone: MusicBrainz's spelling of the artist can
+// defeat the phrase query ("D’Angelo" with a curly apostrophe).
 func (c *Client) searchCandidates(ctx context.Context, want Want) ([]string, error) {
-	q := fmt.Sprintf("artist:%s AND release:%s AND tracks:%d",
-		quote(want.Artist), quote(want.Title), len(want.Tracks))
-	hits, err := c.SearchReleases(ctx, q, 25)
-	if err != nil {
-		return nil, err
+	queries := []string{
+		fmt.Sprintf("artist:%s AND release:%s AND tracks:%d", quote(want.Artist), quote(want.Title), len(want.Tracks)),
+		fmt.Sprintf("release:%s AND tracks:%d", quote(want.Title), len(want.Tracks)),
 	}
 	wantArtist, wantTitle := tidal.Normalize(want.Artist), tidal.Normalize(want.Title)
-	var ids []string
-	for _, h := range hits {
-		if tidal.Similarity(tidal.Normalize(CreditName(h.ArtistCredit)), wantArtist) < 0.8 ||
-			tidal.Similarity(tidal.Normalize(h.Title), wantTitle) < 0.8 {
-			continue
+	for _, q := range queries {
+		hits, err := c.SearchReleases(ctx, q, 25)
+		if err != nil {
+			return nil, err
 		}
-		ids = append(ids, h.ID)
+		var ids []string
+		for _, h := range hits {
+			if tidal.Similarity(tidal.Normalize(CreditName(h.ArtistCredit)), wantArtist) < 0.8 ||
+				tidal.Similarity(tidal.Normalize(h.Title), wantTitle) < 0.8 {
+				continue
+			}
+			ids = append(ids, h.ID)
+		}
+		if len(ids) > 0 {
+			return firstN(ids, maxCandidates), nil
+		}
 	}
-	return firstN(ids, maxCandidates), nil
+	return nil, nil
 }
 
-// Fits reports whether r's track list matches want: the same number of tracks
-// and, where both sides know a length, lengths within lengthTolerance.
+// Fits reports whether r's track list matches want: the same number of
+// tracks, and lengths (where both sides know them) that agree: each within
+// lengthTolerance, bar one track in eight (none for under four tracks)
+// within maxOutlier, with the mean difference under maxMeanDiff.
 func Fits(r Release, want Want) bool {
 	tracks := r.Tracks()
 	if len(tracks) == 0 || len(tracks) != len(want.Tracks) {
 		return false
 	}
+	var compared, total, outliers int
 	for i, t := range tracks {
 		ms := t.Length
 		if ms == 0 {
@@ -197,11 +214,28 @@ func Fits(r Release, want Want) bool {
 		if ms == 0 || w == 0 {
 			continue
 		}
-		if d := ms - w; d > lengthTolerance || d < -lengthTolerance {
+		d := ms - w
+		if d < 0 {
+			d = -d
+		}
+		if d > maxOutlier {
 			return false
 		}
+		if d > lengthTolerance {
+			outliers++
+		}
+		compared++
+		total += d
 	}
-	return true
+	if compared == 0 {
+		return true
+	}
+	// One outlier per eight tracks; a single or EP of under four, none.
+	allowed := len(tracks) / 8
+	if len(tracks) >= 4 {
+		allowed = max(allowed, 1)
+	}
+	return outliers <= allowed && total/compared < maxMeanDiff
 }
 
 // Best picks among fitting releases: most matching ISRCs first, then

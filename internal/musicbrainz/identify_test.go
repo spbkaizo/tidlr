@@ -95,6 +95,39 @@ func TestFits(t *testing.T) {
 	if Fits(r, Want{Tracks: []WantTrack{{Seconds: 180}}}) {
 		t.Error("different track count should not fit")
 	}
+
+	// From real albums: one track a few seconds out on another master.
+	album := func(lengths ...int) Release {
+		var tr []Track
+		for _, l := range lengths {
+			tr = append(tr, Track{Length: l * 1000})
+		}
+		return Release{Media: []Medium{{Tracks: tr}}}
+	}
+	want := func(secs ...int) Want {
+		var w Want
+		for _, s := range secs {
+			w.Tracks = append(w.Tracks, WantTrack{Seconds: s})
+		}
+		return w
+	}
+	creeper := want(46, 159, 177, 207, 18, 229, 243, 208, 202, 205, 22, 214, 7, 215, 255)
+	if !Fits(album(46, 159, 176, 206, 18, 224, 243, 208, 202, 205, 22, 214, 7, 215, 255), creeper) {
+		t.Error("one track 5s out on a 15-track album should fit")
+	}
+	if Fits(album(46, 159, 176, 206, 18, 224, 243, 208, 197, 205, 22, 214, 7, 215, 255), creeper) {
+		t.Error("two tracks 5s out on a 15-track album should not fit")
+	}
+	if Fits(album(46, 159, 177, 207, 18, 229, 243, 208, 202, 205, 22, 214, 7, 215, 270), creeper) {
+		t.Error("a track 15s out should not fit")
+	}
+	// Same track count, different album: close per track, far on average.
+	if Fits(album(48, 161, 179, 209, 20, 231, 245, 210, 204, 207, 24, 216, 9, 217, 257), creeper) {
+		t.Error("every track 2s out should not fit")
+	}
+	if Fits(album(200, 185), want(200, 180)) {
+		t.Error("a short release allows no outlier")
+	}
 }
 
 func TestBestPrefersISRCsThenCountryAndFormat(t *testing.T) {
