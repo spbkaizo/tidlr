@@ -109,6 +109,32 @@ func (o *Organizer) Organize(ctx context.Context, a Album) (string, error) {
 	o.logf("identified %s — %s as MusicBrainz release %s (%s, by %s)",
 		want.Artist, want.Title, r.ID, strings.TrimSpace(r.Country+" "+r.Date), match.Method)
 
+	sources := make([]tagger.Source, len(tracks))
+	for i, tr := range tracks {
+		sources[i] = tagger.Source{
+			ISRC: tr.ISRC, Copyright: firstNonEmpty(tr.Copyright, a.Tidal.Copyright),
+			ReplayGain: tr.ReplayGain, Peak: tr.Peak,
+		}
+	}
+	dest, err := o.file(ctx, r, a.Dir, files, sources)
+	var hold *holdError
+	if errors.As(err, &hold) {
+		return o.review(a, hold.reason)
+	}
+	return dest, err
+}
+
+// holdError is a filing failure that sends a new album to review.
+type holdError struct{ reason string }
+
+func (e *holdError) Error() string { return e.reason }
+
+// file gives the album in dir, whose files are release r's tracks in order,
+// its genre and tags, and moves it into the library. sources carries tags
+// MusicBrainz doesn't have (ISRC, copyright, ReplayGain), per track. Errors
+// the album itself causes are *holdError; dir is left as it was on any error
+// short of a part-tagged album.
+func (o *Organizer) file(ctx context.Context, r musicbrainz.Release, dir string, files []string, sources []tagger.Source) (string, error) {
 	g := o.genre(ctx, r)
 	o.logf("genre: %s (%s)", orUnknown(g.Grouping), strings.Join(g.Genres, ", "))
 
@@ -138,21 +164,18 @@ func (o *Organizer) Organize(ctx context.Context, a Album) (string, error) {
 	}
 
 	var moves []filing.Move
-	for i, tr := range tracks {
-		tags, err := tagger.FromRelease(r, i, g, tagger.Source{
-			ISRC: tr.ISRC, Copyright: firstNonEmpty(tr.Copyright, a.Tidal.Copyright),
-			ReplayGain: tr.ReplayGain, Peak: tr.Peak,
-		})
+	for i, f := range files {
+		tags, err := tagger.FromRelease(r, i, g, sources[i])
 		if err != nil {
-			return o.review(a, err.Error())
+			return "", &holdError{err.Error()}
 		}
-		if err := o.Tagger.Write(ctx, files[i], tags); err != nil {
-			return o.review(a, "tagging failed: "+err.Error())
+		if err := o.Tagger.Write(ctx, f, tags); err != nil {
+			return "", &holdError{"tagging failed: " + err.Error()}
 		}
 		name := filing.TrackFile(fa, filing.Track{Disc: tags.Disc, Number: tags.Track, Title: tags.Title})
-		moves = append(moves, filing.Move{From: files[i], Name: name + filepath.Ext(files[i])})
+		moves = append(moves, filing.Move{From: f, Name: name + filepath.Ext(f)})
 	}
-	moves = append(moves, extras(a.Dir)...)
+	moves = append(moves, extras(dir)...)
 
 	// The share can drop mid-batch; check again right before writing to it.
 	// An unmounted library is not the album's fault: leave it where it is.
@@ -162,14 +185,14 @@ func (o *Organizer) Organize(ctx context.Context, a Album) (string, error) {
 	dest := filepath.Join(o.LibraryDir, o.Layout.AlbumDir(fa))
 	if err := filing.Place(dest, moves); err != nil {
 		if errors.Is(err, filing.ErrExists) {
-			return o.review(a, "already in the library at "+dest)
+			return "", &holdError{"already in the library at " + dest}
 		}
 		return "", err
 	}
 	if o.artists != nil {
 		o.artists.add(dest)
 	}
-	removeDir(a.Dir)
+	removeDir(dir)
 	return dest, nil
 }
 

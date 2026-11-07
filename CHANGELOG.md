@@ -17,7 +17,8 @@ All notable changes to `tidlr` are documented here. This project adheres to
   lists are built in (ID3 names, MusicBrainz's CC0 genre list, common moods);
   Picard's lastfmng plugin lists are used when installed. Albums that can't be identified, or are already in the
   library, are held in `review_dir` and listed by `tidlr status`.
-- New `review` queue state.
+- New `review` queue state, and **`tidlr file DIR RELEASE`** to file an
+  album held for review as the MusicBrainz release you pick.
 - `genre_merge` collapses near-duplicate genre folders (e.g. Punk Rock into
   Punk); `keep_artist_together` (default on) files an album with the
   artist's other albums rather than splitting an artist across folders.

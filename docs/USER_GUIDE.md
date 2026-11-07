@@ -290,7 +290,18 @@ An album that can't be identified, or whose folder already exists in the
 library, is **held for review** in `review_dir` (default
 `<output_dir>/_review`) with its basic tags, and is never overwritten. It
 counts as downloaded, so it isn't fetched again. `tidlr status` lists held
-albums with the reason, ready to sort out by hand, for example in Picard.
+albums with the reason.
+
+To file a held album, find its release on [musicbrainz.org](https://musicbrainz.org)
+and give tidlr the folder and the release's id or URL:
+
+```sh
+tidlr file ~/Music/tidlr/_review/Geese/"Getting Killed" https://musicbrainz.org/release/2b637090-036e-4f86-8183-e1be856e1421
+```
+
+It is tagged, given a genre and filed like any new album. The release must
+have as many tracks as the folder; tracks are matched in disc and track
+order. If anything is wrong the album stays where it is.
 
 tidlr checks that `library_dir` is mounted and writable before starting, so a
 run with the network share unmounted exits straight away instead of

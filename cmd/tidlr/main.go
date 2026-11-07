@@ -265,6 +265,8 @@ func main() {
 		mustRun(ctx, cfg, q)
 	case "retag":
 		mustRetag(ctx, cfg, q, flag.Args()[1:], *apply, *limit)
+	case "file":
+		mustFile(ctx, cfg, q, flag.Args()[1:])
 	case "status":
 		mustStatus(q)
 	default:
@@ -971,6 +973,51 @@ func mustOrganizer(cfg config.Config, logger *log.Logger, q *queue.Queue) *organ
 	return o
 }
 
+// mbidRe finds a MusicBrainz id, alone or in a musicbrainz.org URL.
+var mbidRe = regexp.MustCompile(`[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}`)
+
+// mustFile files an album held for review (or any album folder) as the
+// MusicBrainz release the user identified, and marks its queue item done.
+func mustFile(ctx context.Context, cfg config.Config, q *queue.Queue, args []string) {
+	if len(args) != 2 {
+		log.Fatalf("usage: tidlr file DIR RELEASE  (RELEASE: MusicBrainz release id or URL)")
+	}
+	if cfg.LibraryDir == "" {
+		log.Fatalf("file: set library_dir in the config first")
+	}
+	dir, err := filepath.Abs(args[0])
+	if err != nil {
+		log.Fatalf("file: %v", err)
+	}
+	mbid := mbidRe.FindString(strings.ToLower(args[1]))
+	if mbid == "" {
+		log.Fatalf("file: %q is not a MusicBrainz release id or URL", args[1])
+	}
+	mustLibraryMounted(cfg)
+	org := mustOrganizer(cfg, log.Default(), q)
+	dest, err := org.FileAs(ctx, dir, mbid)
+	if err != nil {
+		log.Fatalf("file: %v", err)
+	}
+	log.Printf("filed at %s", dest)
+
+	// The queue item held for review records where the album was held.
+	held, err := q.InState(queue.StateReview)
+	if err != nil {
+		log.Fatalf("file: %v", err)
+	}
+	for _, it := range held {
+		if strings.HasSuffix(it.LastError, " at "+dir) {
+			if err := q.MarkDownloaded(it.ReviewID, it.Artist, it.Album, dest); err != nil {
+				log.Fatalf("file: %v", err)
+			}
+			if err := q.SetState(it.ReviewID, queue.StateDone); err != nil {
+				log.Fatalf("file: %v", err)
+			}
+		}
+	}
+}
+
 // mustLibraryMounted exits when library_dir is set but its share is not
 // mounted (or not writable), returning the home folder used for the check.
 func mustLibraryMounted(cfg config.Config) string {
@@ -1123,7 +1170,10 @@ Commands:
             each album's genre from its tags (Last.fm, then MusicBrainz) and
             moves it. DIR defaults to every Archive */Unknown folder. Dry run
             unless -apply; -limit N stops after N albums
-  status    Show queue state counts
+  file DIR RELEASE  File an album held for review as the MusicBrainz release
+            you choose (its id or musicbrainz.org/release/... URL): tags it
+            and moves it into library_dir like any new album
+  status    Show queue state counts, and albums held for review
   version   Print the tidlr version
 
 Flags:
