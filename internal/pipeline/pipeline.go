@@ -22,11 +22,29 @@ import (
 	"github.com/simonb/tidlr/internal/queue"
 )
 
+// Converter turns a downloaded album into ALAC in the output folder
+// (*convert.Converter).
+type Converter interface {
+	Convert(ctx context.Context, r adm.Release, srcDir string, lossless bool) (string, error)
+}
+
+// Organizer identifies, tags and files a converted album in the library
+// (*organize.Organizer).
+type Organizer interface {
+	Organize(ctx context.Context, a organize.Album) (string, error)
+	InLibrary(artist, title, year string) (string, bool)
+}
+
+var (
+	_ Converter = (*convert.Converter)(nil)
+	_ Organizer = (*organize.Organizer)(nil)
+)
+
 // Pipeline processes queued albums.
 type Pipeline struct {
 	Queue      *queue.Queue
 	Downloader downloader.Downloader
-	Converter  *convert.Converter
+	Converter  Converter
 
 	DownloadWorkers int
 	ConvertWorkers  int
@@ -37,8 +55,9 @@ type Pipeline struct {
 	QuietDownloadStart bool
 
 	// Organizer, if set, identifies, tags and files each converted album in
-	// the library (replacing Picard). Nil keeps albums where convert put them.
-	Organizer *organize.Organizer
+	// the library (replacing Picard). Nil keeps albums where convert put them;
+	// never set it to a nil *organize.Organizer, which is not a nil Organizer.
+	Organizer Organizer
 	// Force downloads albums the library already has (--force); otherwise
 	// an album found there, loosely matched by name, is skipped.
 	Force bool

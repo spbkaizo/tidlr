@@ -390,9 +390,11 @@ func mustRun(ctx context.Context, cfg config.Config, q *queue.Queue, force bool)
 		DownloadWorkers:    downloadWorkers,
 		QuietDownloadStart: quietDownloadStart,
 		ConvertWorkers:     cfg.ConvertWorkers,
-		Organizer:          mustOrganizer(cfg, runLog, q),
 		Force:              force,
 		Log:                runLog,
+	}
+	if org := mustOrganizer(cfg, runLog, q); org != nil {
+		p.Organizer = org
 	}
 	if err := p.Run(ctx); err != nil && ctx.Err() == nil {
 		log.Fatalf("run: %v", err)
