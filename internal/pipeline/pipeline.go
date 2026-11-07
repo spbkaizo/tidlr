@@ -9,6 +9,7 @@ import (
 	"errors"
 	"log"
 	"os"
+	"path/filepath"
 	"sync"
 	"sync/atomic"
 
@@ -159,6 +160,7 @@ func (p *Pipeline) runConvert(ctx context.Context, item queue.Item, res download
 	}
 	// Clean up the now-empty scratch download dir (best effort).
 	os.RemoveAll(audioDir)
+	removeEmptyParents(audioDir, 2) // <review id>/<artist>/<album>
 
 	if p.Organizer != nil {
 		dest, err := p.Organizer.Organize(ctx, organize.Album{Dir: out, Tidal: res.Album, Tracks: res.Tracks})
@@ -198,6 +200,17 @@ func (p *Pipeline) runConvert(ctx context.Context, item queue.Item, res download
 		p.logf("set done: %v", err)
 	}
 	p.logf("done:        %s — %s -> %s", item.Artist, item.Album, out)
+}
+
+// removeEmptyParents removes up to n parent folders of dir, nearest first,
+// stopping at the first that is not empty.
+func removeEmptyParents(dir string, n int) {
+	for ; n > 0; n-- {
+		dir = filepath.Dir(dir)
+		if os.Remove(dir) != nil {
+			return
+		}
+	}
 }
 
 func (p *Pipeline) logf(format string, args ...any) {
