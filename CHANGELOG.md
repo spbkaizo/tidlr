@@ -22,6 +22,8 @@ All notable changes to `tidlr` are documented here. This project adheres to
 - **`tidlr retag [DIR…]`** fixes the genre folder of albums already in the
   library (by default everything under `Archive */Unknown`): genre from the
   album's tags via Last.fm, then MusicBrainz; dry run unless `-apply`.
+  When the target folder is a shell an earlier move left behind (rip logs,
+  cover art, no audio), those files join the album rather than blocking it.
 - tidlr exits before downloading when `library_dir` isn't mounted or
   writable, including a dropped share whose mount point is left behind as a
   local folder, and stops mid-run if the share disappears.

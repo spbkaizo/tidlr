@@ -116,6 +116,39 @@ func (o *Organizer) PlanRetag(ctx context.Context, dir string) (Retag, error) {
 	return plan, nil
 }
 
+// absorbLeftovers handles a move whose target folder already exists. Earlier
+// moves (Picard's) took an album's audio but left files such as rip logs,
+// cover.jpg and AlbumInfo.txt behind, so a target with no .m4a files is such
+// a shell: its files join the album being moved and the emptied folder is
+// removed. A leftover named like one of the album's files (often a larger,
+// original cover.jpg) is kept beside it as "cover (leftover).jpg". A target
+// holding audio is a real second copy and an error.
+func absorbLeftovers(target, album string) error {
+	entries, err := os.ReadDir(target)
+	if err != nil {
+		return err
+	}
+	for _, e := range entries {
+		if e.IsDir() || strings.EqualFold(filepath.Ext(e.Name()), ".m4a") {
+			return fmt.Errorf("%s already exists", target)
+		}
+	}
+	for _, e := range entries {
+		to := filepath.Join(album, e.Name())
+		if _, err := os.Lstat(to); err == nil {
+			ext := filepath.Ext(e.Name())
+			to = filepath.Join(album, strings.TrimSuffix(e.Name(), ext)+" (leftover)"+ext)
+			if _, err := os.Lstat(to); err == nil {
+				return fmt.Errorf("%s already exists (leftover %s clashes in %s)", target, e.Name(), album)
+			}
+		}
+		if err := os.Rename(filepath.Join(target, e.Name()), to); err != nil {
+			return err
+		}
+	}
+	return os.Remove(target)
+}
+
 // clean makes a genre safe as a folder name the way the naming script would.
 func clean(s string) string {
 	return strings.NewReplacer("/", "_", ":", "~", "?", "~", "*", "~", "|", "~", `"`, "~", "<", "~", ">", "~").Replace(s)
@@ -132,7 +165,9 @@ func (o *Organizer) ApplyRetag(ctx context.Context, plan Retag) error {
 	}
 	if plan.Moves() {
 		if _, err := os.Stat(plan.NewDir); err == nil {
-			return fmt.Errorf("%s already exists", plan.NewDir)
+			if err := absorbLeftovers(plan.NewDir, plan.Dir); err != nil {
+				return err
+			}
 		}
 	}
 	g := plan.Result
