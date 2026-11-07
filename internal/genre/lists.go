@@ -1,8 +1,8 @@
 // Package genre picks an album's genre grouping (the library folder), genres
 // and moods from Last.fm tags, porting the album logic of the lastfmng Picard
-// plugin the user's library was built with: weighted toptags from the album,
-// its artists and its tracks, translated, then sorted into categories by
-// whitelist and a score threshold relative to the category's top tag.
+// plugin: weighted toptags from the album, its artists and its tracks,
+// translated, then sorted into categories by whitelist and a score threshold
+// relative to the category's top tag.
 //
 // The whitelists and translations are lastfmng's own (GPL), so they are not
 // shipped here: Load reads them from the plugin's defaults.ini at run time,

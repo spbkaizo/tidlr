@@ -7,16 +7,17 @@ All notable changes to `tidlr` are documented here. This project adheres to
 
 ### Added
 
-- **MusicBrainz tagging and filing, replacing Picard** (`library_dir`). Each
-  downloaded album is identified on MusicBrainz (barcode, then ISRCs, then
-  name search, checked against the downloaded track list), given a genre from
-  Last.fm as the lastfmng Picard plugin did (`lastfm_api_key`; MusicBrainz
-  genres otherwise), tagged with Picard's tag set via AtomicParsley, and filed
+- **MusicBrainz tagging and filing** (`library_dir`). Each downloaded album
+  is identified on MusicBrainz (barcode, then ISRCs, then name search, checked
+  against the downloaded track list), given a genre from Last.fm the way the
+  lastfmng Picard plugin does (`lastfm_api_key`; MusicBrainz genres
+  otherwise), tagged via AtomicParsley with the tags Picard writes, and filed
   by `library_layout`: `artist` (`<Artist>/<Year> - <Album>/`, the default)
   or `genre` (`Archive Albums/<Genre>/<Artist> - <Year> - <Album>/`). Genre
   lists are built in (ID3 names, MusicBrainz's CC0 genre list, common moods);
-  Picard's lastfmng plugin lists are used when installed. Albums that can't be identified, or are already in the
-  library, are held in `review_dir` and listed by `tidlr status`.
+  the lastfmng plugin's lists are used when installed. Albums that can't be
+  identified, or are already in the library, are held in `review_dir` and
+  listed by `tidlr status`.
 - Albums already in the library under a slightly different name ("&" vs
   "and", a "(Deluxe)" or "[Explicit]" edition) are recognised: a queued
   album found there is skipped before downloading (unless `--force`), and
@@ -29,9 +30,10 @@ All notable changes to `tidlr` are documented here. This project adheres to
 - `genre_merge` collapses near-duplicate genre folders (e.g. Punk Rock into
   Punk); `keep_artist_together` (default on) files an album with the
   artist's other albums rather than splitting an artist across folders.
-- **`tidlr retag [DIR…]`** fixes the genre folder of albums already in the
-  library (by default everything under `Archive */Unknown`): genre from the
-  album's tags via Last.fm, then MusicBrainz; dry run unless `-apply`.
+- **`tidlr retag [DIR…]`** refreshes the genre of albums already in the
+  library, from the album's tags via Last.fm, then MusicBrainz, and in the
+  `genre` layout moves them to the right genre folder (by default it checks
+  every `Archive */Unknown` folder); dry run unless `-apply`.
   When the target folder is a shell an earlier move left behind (rip logs,
   cover art, no audio), those files join the album rather than blocking it.
 - With `library_dir` set, tidlr checks its tools before starting: it exits

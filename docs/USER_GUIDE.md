@@ -243,15 +243,19 @@ mid-flight are recovered automatically, and `tidlr retry` picks up failures.
 The scratch download area (partial FLACs before conversion) also lives under
 `~/.local/share/tidlr/` and is cleaned up automatically.
 
-### Tagging and filing with MusicBrainz (replacing Picard)
+### Tagging and filing with MusicBrainz
 
-Set `library_dir` in `config.toml` and each downloaded album is finished the
-way a Picard setup with the lastfmng plugin would finish it:
+Set `library_dir` in `config.toml` and each downloaded album is identified,
+tagged and filed into your library. The tags are the ones MusicBrainz Picard
+writes, under the same names, so Picard (and anything that reads Picard's
+tags) sees tidlr's albums as already matched, and albums filed by either
+sit side by side.
 
 1. **Identified on MusicBrainz**: by the album's barcode, then by its tracks'
    ISRCs, then by artist, title and track count. A release is accepted only if
-   its track list matches what was downloaded (same number of tracks, lengths
-   within 3 seconds). Among several matches the preference is: most matching
+   its track list matches what was downloaded: the same number of tracks,
+   lengths within 3 seconds (one track in eight may be up to 10 seconds out,
+   as another master often is, if the rest agree closely). Among several matches the preference is: most matching
    ISRCs, official status, country GB > XW > US, Digital Media > CD, then the
    earliest release.
 2. **Given a genre**: from Last.fm tags (this needs `lastfm_api_key`),
@@ -372,7 +376,7 @@ it with `--config <path>`.
 | `download_workers` | `3`                 | How many albums download at once (pipeline mode).              |
 | `convert_workers`  | `4`                 | How many albums convert at once (pipeline mode).               |
 | `keep_flac`        | `false`             | Also deliver the source FLACs next to the ALAC.                |
-| `library_dir`      | (empty)             | Tag with MusicBrainz and file albums here ([details](#tagging-and-filing-with-musicbrainz-replacing-picard)). |
+| `library_dir`      | (empty)             | Tag with MusicBrainz and file albums here ([details](#tagging-and-filing-with-musicbrainz)). |
 | `library_layout`   | `artist`            | `artist` or `genre` folder arrangement under `library_dir`.    |
 | `review_dir`       | `<output_dir>/_review` | Albums that couldn't be identified or filed.                |
 | `lastfm_api_key`   | (empty)             | Genres from Last.fm; without it, from MusicBrainz.             |

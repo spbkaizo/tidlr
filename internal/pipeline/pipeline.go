@@ -55,7 +55,7 @@ type Pipeline struct {
 	QuietDownloadStart bool
 
 	// Organizer, if set, identifies, tags and files each converted album in
-	// the library (replacing Picard). Nil keeps albums where convert put them;
+	// the library. Nil keeps albums where convert put them;
 	// never set it to a nil *organize.Organizer, which is not a nil Organizer.
 	Organizer Organizer
 	// Force downloads albums the library already has (--force); otherwise

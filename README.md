@@ -31,6 +31,11 @@ the only runtime dependency is `ffmpeg`.
   or album never sinks a batch. Interrupt any time and re-run to resume.
 - **Cover art + tags.** Every track gets embedded artwork and
   title/artist/album/track metadata.
+- **MusicBrainz tagging and filing.** Optionally, each album is identified on
+  MusicBrainz, given a genre from Last.fm, tagged with the same tags
+  MusicBrainz Picard writes (so Picard sees it as already matched) and filed
+  into your library, by artist or by genre. Albums it can't place are held
+  for you to review. See the [user guide](docs/USER_GUIDE.md#tagging-and-filing-with-musicbrainz).
 
 ---
 
@@ -38,6 +43,8 @@ the only runtime dependency is `ffmpeg`.
 
 - **Go 1.27+** (to build/install)
 - **ffmpeg** (for FLAC→ALAC conversion) — `brew install ffmpeg`
+- **AtomicParsley**, only for MusicBrainz tagging (`library_dir`) —
+  `brew install atomicparsley`
 - **A paid Tidal subscription** (HiFi/HiFi Plus for lossless)
 
 ---
@@ -110,7 +117,9 @@ Files land in `~/Music/tidlr/` by default. See the
 | `tidlr scrape`                | Just enqueue new releases (with `--since` to reach further back).   |
 | `tidlr run`                   | Download everything currently queued.                               |
 | `tidlr retry`                 | Requeue failed items and run again.                                 |
-| `tidlr status`                | Show queue counts (pending / downloading / done / failed).          |
+| `tidlr status`                | Show queue counts, and albums held for review.                      |
+| `tidlr retag [dir ...]`       | Refresh the genre of albums already in the library (dry run unless `-apply`). |
+| `tidlr file <dir> <release>`  | File an album held for review as the MusicBrainz release you choose. |
 | `tidlr -v`                    | Print the version, build commit and Go version.                     |
 
 Global flags: `-v` / `--version`, `--config <path>`, `--since <DDMMYY>`,
@@ -158,6 +167,11 @@ output_dir = "~/Music/tidlr"   # where ALAC files land
 quality    = "max"             # low | normal | high | max  (max = HiRes lossless)
 keep_flac  = false             # true also puts the source FLACs in the library
 progress   = true              # live per-track display; downloads albums serially
+
+# Optional: identify, tag and file each album into a library
+library_dir    = "~/Music/Library"
+library_layout = "artist"      # artist | genre
+lastfm_api_key = ""            # free key from last.fm/api; genres from MusicBrainz without it
 ```
 
 ### Progress display vs. throughput

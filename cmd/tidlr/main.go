@@ -1169,10 +1169,11 @@ Commands:
   run       Download + convert all pending queue items
   sync      requeue failed items, scrape, then run  (the everyday command)
   retry     Requeue failed items, then run (no scrape)
-  retag [DIR...]  Fix the genre folder of albums in library_dir: works out
-            each album's genre from its tags (Last.fm, then MusicBrainz) and
-            moves it. DIR defaults to every Archive */Unknown folder. Dry run
-            unless -apply; -limit N stops after N albums
+  retag [DIR...]  Refresh the genre of albums in library_dir, worked out
+            from their tags (Last.fm, then MusicBrainz); in the genre layout
+            also move each to its genre folder. DIR defaults to every
+            Archive */Unknown folder (genre layout) or the whole library.
+            Dry run unless -apply; -limit N stops after N albums
   file DIR RELEASE  File an album held for review as the MusicBrainz release
             you choose (its id or musicbrainz.org/release/... URL): tags it
             and moves it into library_dir like any new album

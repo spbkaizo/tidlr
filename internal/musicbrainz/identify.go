@@ -34,7 +34,8 @@ type Prefs struct {
 	Formats   []string
 }
 
-// DefaultPrefs matches the user's Picard settings.
+// DefaultPrefs prefers UK, then worldwide, then US releases, and digital
+// over CD, as Picard's preferred release countries and formats would.
 var DefaultPrefs = Prefs{
 	Countries: []string{"GB", "XW", "US"},
 	Formats:   []string{"Digital Media", "CD"},

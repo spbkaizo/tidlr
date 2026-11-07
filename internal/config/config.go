@@ -49,8 +49,8 @@ type Config struct {
 	// It is a no-op on a non-TTY, where DownloadWorkers is honoured regardless.
 	Progress bool `toml:"progress"`
 
-	// LibraryDir, when set, replaces Picard: each downloaded album is
-	// identified on MusicBrainz, tagged the way Picard tags, and filed under
+	// LibraryDir, when set, has each downloaded album identified on
+	// MusicBrainz, tagged with the tags Picard writes, and filed under
 	// LibraryDir as LibraryLayout says. Empty keeps albums in OutputDir with
 	// basic tags only.
 	LibraryDir string `toml:"library_dir"`

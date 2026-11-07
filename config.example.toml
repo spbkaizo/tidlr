@@ -41,7 +41,7 @@ keep_flac = false
 # (redirected output, cron), where download_workers always applies.
 progress = true
 
-# --- Tagging and filing (replaces Picard) -----------------------------------
+# --- Tagging and filing with MusicBrainz -------------------------------------
 # Set library_dir to have each downloaded album identified on MusicBrainz,
 # tagged the way Picard tags (MusicBrainz ids, label, barcode, original date,
 # genre/grouping/mood...) and filed in the library. Leave it empty to keep

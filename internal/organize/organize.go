@@ -1,7 +1,6 @@
-// Package organize finishes a downloaded album the way the user's Picard
-// setup did: identify it on MusicBrainz, pick its genre from Last.fm (falling
-// back to MusicBrainz genres), write Picard's tags, and file it in the library
-// under Picard's naming scheme. An album that can't be identified or filed is
+// Package organize finishes a downloaded album: identify it on MusicBrainz,
+// pick its genre from Last.fm (falling back to MusicBrainz genres), write the
+// tags Picard writes, and file it in the library. An album that can't be identified or filed is
 // held in a review folder instead, with the reason.
 package organize
 
