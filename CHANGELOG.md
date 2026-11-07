@@ -26,6 +26,8 @@ All notable changes to `tidlr` are documented here. This project adheres to
   album's tags via Last.fm, then MusicBrainz; dry run unless `-apply`.
   When the target folder is a shell an earlier move left behind (rip logs,
   cover art, no audio), those files join the album rather than blocking it.
+- With `library_dir` set, tidlr checks its tools before starting: it exits
+  when AtomicParsley is missing or Last.fm rejects `lastfm_api_key`.
 - tidlr exits before downloading when `library_dir` isn't mounted or
   writable, including a dropped share whose mount point is left behind as a
   local folder, and stops mid-run if the share disappears.

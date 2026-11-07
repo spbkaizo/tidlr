@@ -2,6 +2,7 @@ package genre
 
 import (
 	"context"
+	"errors"
 	"net/http"
 	"net/http/httptest"
 	"sync/atomic"
@@ -89,5 +90,24 @@ func TestTopTagsRetries(t *testing.T) {
 	hits.Store(10)
 	if _, err := c.TopTags(context.Background(), "artist.gettoptags", map[string]string{"artist": "BadKey"}); err == nil || hits.Load() != 11 {
 		t.Errorf("bad key: err %v after %d requests; want an error after 1", err, hits.Load()-10)
+	}
+}
+
+func TestCheckKey(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Query().Get("api_key") == "good" {
+			w.Write([]byte(`{"toptags":{"tag":[{"name":"pop","count":100}]}}`))
+			return
+		}
+		w.Write([]byte(`{"error":10,"message":"Invalid API key - You must be granted a valid key by last.fm"}`))
+	}))
+	defer srv.Close()
+	for key, wantBad := range map[string]bool{"good": false, "bad": true} {
+		c := NewLastFM(key)
+		c.BaseURL, c.Interval = srv.URL, 0
+		err := c.CheckKey(context.Background())
+		if errors.Is(err, ErrBadKey) != wantBad || (!wantBad && err != nil) {
+			t.Errorf("key %s: err = %v", key, err)
+		}
 	}
 }

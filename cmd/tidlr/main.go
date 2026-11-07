@@ -953,6 +953,15 @@ func mustOrganizer(cfg config.Config, logger *log.Logger, q *queue.Queue) *organ
 	}
 	if cfg.LastFMAPIKey != "" {
 		o.LastFM = genre.NewLastFM(cfg.LastFMAPIKey)
+		ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+		err := o.LastFM.CheckKey(ctx)
+		cancel()
+		switch {
+		case errors.Is(err, genre.ErrBadKey):
+			log.Fatalf("lastfm_api_key: %v", err)
+		case err != nil:
+			logger.Printf("warning: could not reach Last.fm to check the API key: %v", err)
+		}
 		if q != nil {
 			o.LastFM.Store = q.Cache("lastfm") // tags rarely change: keep them
 		}

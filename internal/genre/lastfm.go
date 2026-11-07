@@ -3,6 +3,7 @@ package genre
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"net/http"
 	"net/url"
@@ -108,6 +109,23 @@ func (c *LastFM) TopTags(ctx context.Context, method string, args map[string]str
 		}
 	}
 	return tags, nil
+}
+
+// ErrBadKey means Last.fm rejected the API key.
+var ErrBadKey = errors.New("Last.fm rejected the API key")
+
+// CheckKey makes one request to see that Last.fm accepts the API key. It
+// returns ErrBadKey (wrapped) for an invalid or suspended key, or another
+// error when Last.fm could not be reached.
+func (c *LastFM) CheckKey(ctx context.Context) error {
+	params := url.Values{"method": {"artist.gettoptags"}, "artist": {"Cher"}, "api_key": {c.APIKey}, "format": {"json"}}
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	body, _, err := c.get(ctx, "artist.gettoptags", params)
+	if body.Error == 10 || body.Error == 26 {
+		return fmt.Errorf("%w: %s", ErrBadKey, body.Message)
+	}
+	return err
 }
 
 // RetryWaits are the pauses before retrying a request that failed in a way
