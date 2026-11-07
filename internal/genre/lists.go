@@ -5,17 +5,51 @@
 // whitelist and a score threshold relative to the category's top tag.
 //
 // The whitelists and translations are lastfmng's own (GPL), so they are not
-// shipped here: Load reads them from the plugin's defaults.ini at run time.
-// Without it, Builtin falls back to the ID3v1 genre names for grouping.
+// shipped here: Load reads them from the plugin's defaults.ini at run time,
+// for Picard users who have it (FindLastFMNG). Without it, Builtin uses the
+// ID3v1 genre names for the grouping and MusicBrainz's genre list (CC0,
+// mbgenres.txt) for genres.
 package genre
 
 import (
 	"bufio"
+	_ "embed"
 	"io"
 	"os"
+	"path/filepath"
+	"runtime"
 	"strconv"
 	"strings"
 )
+
+// mbGenres is MusicBrainz's genre list, one per line, from
+// https://musicbrainz.org/ws/2/genre/all?fmt=txt (CC0).
+//
+//go:embed mbgenres.txt
+var mbGenres string
+
+// FindLastFMNG returns the path of the lastfmng Picard plugin's defaults.ini
+// if it is installed in Picard's usual plugin folder, else "".
+func FindLastFMNG() string {
+	var dir string
+	if runtime.GOOS == "darwin" {
+		home, err := os.UserHomeDir()
+		if err != nil {
+			return ""
+		}
+		dir = filepath.Join(home, "Library", "Preferences")
+	} else {
+		var err error
+		if dir, err = os.UserConfigDir(); err != nil {
+			return ""
+		}
+	}
+	path := filepath.Join(dir, "MusicBrainz", "Picard", "plugins", "lastfmng", "defaults.ini")
+	if _, err := os.Stat(path); err != nil {
+		return ""
+	}
+	return path
+}
 
 // Category is one tag category: tags in its whitelist scoring at least
 // Threshold times the category's best score, up to Limit of them.
@@ -152,15 +186,53 @@ Polsk Punk, Beat, Christian Gangsta Rap, Heavy Metal, Black Metal, Crossover,
 Contemporary Christian, Christian Rock, Merengue, Salsa, Thrash Metal, Anime,
 JPop, Synthpop`
 
-// Builtin is the configuration used without lastfmng's defaults.ini:
-// grouping from the ID3v1 genres with lastfmng's limits, no genre or mood
-// whitelists (so only the grouping is set).
+// moods is the built-in mood whitelist: common Last.fm mood tags.
+const moods = `aggressive, angry, atmospheric, beautiful, bittersweet, calm, chill,
+chillout, cheerful, dark, dreamy, energetic, epic, euphoric, feel good, fun,
+gloomy, groovy, happy, haunting, hypnotic, intense, introspective, lonely,
+mellow, melancholic, melancholy, moody, nostalgic, party, peaceful, playful,
+powerful, relaxing, romantic, sad, sensual, sexy, smooth, soothing, upbeat,
+uplifting, warm`
+
+// builtinTranslations map common spellings of a tag onto one name, so the
+// ID3 grouping names and MusicBrainz's genre names meet.
+var builtinTranslations = map[string]string{
+	"hip hop": "hip-hop", "hiphop": "hip-hop", "trip hop": "trip-hop",
+	"electronica": "electronic", "electro": "electronic",
+	"dnb": "drum & bass", "drum n bass": "drum & bass", "drum and bass": "drum & bass", "drum'n'bass": "drum & bass",
+	"lofi": "lo-fi", "lo fi": "lo-fi",
+	"rnb": "r&b", "rhythm and blues": "r&b", "rhythm & blues": "r&b",
+	"synth-pop": "synthpop", "synth pop": "synthpop",
+	"rock and roll": "rock & roll", "rock n roll": "rock & roll",
+	"melancholy": "melancholic", "chillout": "chill",
+}
+
+// Builtin is the configuration used without lastfmng's defaults.ini, with
+// lastfmng's limits and thresholds: grouping from the ID3v1 genre names,
+// genres from MusicBrainz's genre list, moods from a short list of common
+// mood tags.
 func Builtin() Lists {
+	tr := builtinTranslations
+	translated := func(set map[string]bool) map[string]bool {
+		out := map[string]bool{}
+		for w := range set {
+			if to, ok := tr[w]; ok {
+				w = to
+			}
+			out[w] = true
+		}
+		return out
+	}
+	grouping := translated(words(id3Genres))
+	genres := translated(words(strings.ReplaceAll(mbGenres, "\n", ",")))
+	for g := range grouping {
+		genres[g] = true // a grouping overflowing into genre stays a genre
+	}
 	return Lists{
-		Grouping:      Category{Name: "grouping", Include: words(id3Genres), Exclude: map[string]bool{"soundtrack": true}, Limit: 1, Threshold: 0.5, Overflow: "genre"},
-		Genre:         Category{Name: "genre", Include: map[string]bool{}, Limit: 4, Threshold: 0.4},
-		Mood:          Category{Name: "mood", Include: map[string]bool{}, Limit: 4, Threshold: 0.5},
-		Translations:  map[string]string{"hip hop": "hip-hop", "hiphop": "hip-hop", "electronica": "electronic", "electro": "electronic", "dnb": "drum and bass", "drum n bass": "drum and bass", "trip hop": "trip-hop", "lofi": "lo-fi", "lo fi": "lo-fi"},
-		Abbreviations: map[string]bool{"USA": true, "UK": true},
+		Grouping:      Category{Name: "grouping", Include: grouping, Exclude: map[string]bool{"soundtrack": true}, Limit: 1, Threshold: 0.5, Overflow: "genre"},
+		Genre:         Category{Name: "genre", Include: genres, Exclude: map[string]bool{"soundtrack": true}, Limit: 4, Threshold: 0.4},
+		Mood:          Category{Name: "mood", Include: translated(words(moods)), Limit: 4, Threshold: 0.5},
+		Translations:  tr,
+		Abbreviations: map[string]bool{"USA": true, "UK": true, "R&B": true, "EDM": true, "IDM": true, "EBM": true},
 	}
 }

@@ -63,9 +63,10 @@ type Config struct {
 	// LastFMAPIKey enables genre (and so genre-folder) lookup on Last.fm, as
 	// the lastfmng Picard plugin did. Without it genres come from MusicBrainz.
 	LastFMAPIKey string `toml:"lastfm_api_key"`
-	// LastFMNGDefaults is lastfmng's defaults.ini, read for its genre lists.
-	// Empty finds it in Picard's plugin folder; if absent, a built-in ID3
-	// genre list is used.
+	// LastFMNGDefaults is the lastfmng Picard plugin's defaults.ini, read for
+	// its genre lists. Empty finds it in Picard's plugin folder if installed;
+	// otherwise the built-in lists are used (ID3 genre names for the folder,
+	// MusicBrainz's genre list for genres).
 	LastFMNGDefaults string `toml:"lastfmng_defaults"`
 	// AtomicParsleyBin writes the MusicBrainz tags (brew install atomicparsley).
 	AtomicParsleyBin string `toml:"atomicparsley_bin"`
@@ -123,11 +124,6 @@ func Load(path string) (Config, error) {
 		return cfg, fmt.Errorf("%s: %w", path, err)
 	}
 	cfg.LibraryLayout = layout
-	if cfg.LastFMNGDefaults == "" {
-		if home, err := os.UserHomeDir(); err == nil {
-			cfg.LastFMNGDefaults = filepath.Join(home, "Library", "Preferences", "MusicBrainz", "Picard", "plugins", "lastfmng", "defaults.ini")
-		}
-	}
 	return cfg, nil
 }
 

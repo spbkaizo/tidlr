@@ -65,8 +65,9 @@ progress = true
 # plugin did; without it, from MusicBrainz genres.
 #lastfm_api_key = ""
 
-# lastfmng's genre lists. Default: Picard's plugin folder; a built-in ID3 genre
-# list is used if the file is missing.
+# Genre lists. Built in: ID3 genre names choose the main genre, MusicBrainz's
+# genre list the rest. If the lastfmng Picard plugin is installed in Picard's
+# plugin folder its lists are used instead; point here to use another copy.
 #lastfmng_defaults = "~/Library/Preferences/MusicBrainz/Picard/plugins/lastfmng/defaults.ini"
 
 #atomicparsley_bin = "AtomicParsley"

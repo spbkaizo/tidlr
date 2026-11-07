@@ -925,10 +925,17 @@ func mustOrganizer(cfg config.Config, logger *log.Logger, q *queue.Queue) *organ
 	if _, err := exec.LookPath(cfg.AtomicParsleyBin); err != nil {
 		log.Fatalf("library_dir needs AtomicParsley to write tags: brew install atomicparsley (%v)", err)
 	}
-	lists, err := genre.Load(cfg.LastFMNGDefaults)
-	if err != nil {
-		logger.Printf("lastfmng genre lists not found (%v); using the built-in ID3 genre list", err)
-		lists = genre.Builtin()
+	lists := genre.Builtin()
+	path := cfg.LastFMNGDefaults
+	if path == "" {
+		path = genre.FindLastFMNG()
+	}
+	if path != "" {
+		var err error
+		if lists, err = genre.Load(path); err != nil {
+			log.Fatalf("lastfmng_defaults: %v", err)
+		}
+		logger.Printf("genre lists: lastfmng (%s)", path)
 	}
 	o := &organize.Organizer{
 		MB:         musicbrainz.New("tidlr", appVersion()),

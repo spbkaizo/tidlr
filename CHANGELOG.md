@@ -13,7 +13,9 @@ All notable changes to `tidlr` are documented here. This project adheres to
   Last.fm as the lastfmng Picard plugin did (`lastfm_api_key`; MusicBrainz
   genres otherwise), tagged with Picard's tag set via AtomicParsley, and filed
   by `library_layout`: `artist` (`<Artist>/<Year> - <Album>/`, the default)
-  or `genre` (`Archive Albums/<Genre>/<Artist> - <Year> - <Album>/`). Albums that can't be identified, or are already in the
+  or `genre` (`Archive Albums/<Genre>/<Artist> - <Year> - <Album>/`). Genre
+  lists are built in (ID3 names, MusicBrainz's CC0 genre list, common moods);
+  Picard's lastfmng plugin lists are used when installed. Albums that can't be identified, or are already in the
   library, are held in `review_dir` and listed by `tidlr status`.
 - New `review` queue state.
 - `genre_merge` collapses near-duplicate genre folders (e.g. Punk Rock into

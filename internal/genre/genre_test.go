@@ -107,3 +107,31 @@ func TestTitleCase(t *testing.T) {
 		}
 	}
 }
+
+// TestBuiltin runs Last.fm-style tags (a Fleet Foxes album's, roughly)
+// through the built-in lists: an ID3 grouping, MusicBrainz genres, moods.
+func TestBuiltin(t *testing.T) {
+	l := Builtin()
+	if len(l.Genre.Include) < 1000 {
+		t.Fatalf("built-in genre list has %d genres; the MusicBrainz list was not embedded", len(l.Genre.Include))
+	}
+	tags := Merge(l.translateAll([]Tag{
+		{"folk", 100}, {"indie folk", 80}, {"indie", 60}, {"seen live", 55},
+		{"chamber pop", 45}, {"mellow", 40}, {"Hip Hop", 10}, {"soundtrack", 90},
+	}))
+	got := l.Categorize(tags)
+	// "indie" overflows from the grouping to the front of genre, as in lastfmng.
+	want := Result{Grouping: "Folk", Genres: []string{"Indie", "Folk", "Indie Folk", "Chamber Pop"}, Moods: []string{"Mellow"}}
+	if !reflect.DeepEqual(got, want) {
+		t.Errorf("Categorize = %+v, want %+v", got, want)
+	}
+	if got := l.Categorize(Merge(l.translateAll([]Tag{{"rnb", 100}}))); got.Grouping != "R&B" {
+		t.Errorf("rnb grouping = %q, want R&B", got.Grouping)
+	}
+	// MusicBrainz's spellings meet the ID3 grouping names.
+	for _, g := range []string{"hip hop", "drum and bass", "trip hop", "synth-pop"} {
+		if tr := l.translate(g); !l.Grouping.has(tr) {
+			t.Errorf("%q translates to %q, not a grouping", g, tr)
+		}
+	}
+}

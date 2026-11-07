@@ -254,10 +254,14 @@ way a Picard setup with the lastfmng plugin would finish it:
    within 3 seconds). Among several matches the preference is: most matching
    ISRCs, official status, country GB > XW > US, Digital Media > CD, then the
    earliest release.
-2. **Given a genre**: from Last.fm tags, weighted and filtered exactly as
-   lastfmng does, using its genre lists from Picard's plugin folder. This needs
-   `lastfm_api_key`. Without the key, or when Last.fm has nothing, the genre
-   comes from MusicBrainz's genres.
+2. **Given a genre**: from Last.fm tags (this needs `lastfm_api_key`),
+   weighted across the album, its artists and its tracks the way Picard's
+   lastfmng plugin does. Without the key, or when Last.fm has nothing, the
+   genre comes from MusicBrainz's genres. Tags are sorted against built-in
+   lists: ID3 genre names for the main genre (the `genre` layout's folder),
+   MusicBrainz's genre list for further genres, and common mood tags. If
+   Picard's lastfmng plugin is installed, its own lists are used instead,
+   found automatically or set with `lastfmng_defaults`.
 3. **Tagged** with Picard's tag set: MusicBrainz ids, label, catalogue number,
    barcode, media, release type, status and country, original date, ISRC,
    sort names, and grouping, genre and mood. Multi-valued tags are joined with
