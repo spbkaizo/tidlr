@@ -12,6 +12,7 @@ import (
 	"log"
 	"os"
 	"path/filepath"
+	"regexp"
 	"sort"
 	"strings"
 	"sync"
@@ -142,6 +143,7 @@ func (e *holdError) Error() string { return e.reason }
 // the album itself causes are *holdError; dir is left as it was on any error
 // short of a part-tagged album.
 func (o *Organizer) file(ctx context.Context, r musicbrainz.Release, dir string, files []string, sources []tagger.Source) (string, error) {
+	o.sweepTagTemps(dir)
 	g := o.genre(ctx, r)
 	o.logf("genre: %s (%s)", orUnknown(g.Grouping), strings.Join(g.Genres, ", "))
 
@@ -307,6 +309,30 @@ func extras(dir string) []filing.Move {
 	return out
 }
 
+// tagTempRe matches the copy AtomicParsley writes a track to before renaming
+// it over the original ("01 - Song-temp-80603.m4a"), left behind if a run
+// is killed mid-write.
+var tagTempRe = regexp.MustCompile(`(?i)-temp-\d+\.(m4a|mp4)$`)
+
+// isTagTemp reports whether name is an interrupted tag write: AtomicParsley's
+// temp copy, or tagger's whole-file fallback (".tidlr-retag-…"). The track
+// it was made from is intact; the copy is not a track.
+func isTagTemp(name string) bool {
+	return tagTempRe.MatchString(name) || strings.HasPrefix(name, ".tidlr-retag-")
+}
+
+// sweepTagTemps removes interrupted tag writes from an album folder.
+func (o *Organizer) sweepTagTemps(dir string) {
+	entries, _ := os.ReadDir(dir)
+	for _, e := range entries {
+		if !e.IsDir() && isTagTemp(e.Name()) {
+			if err := os.Remove(filepath.Join(dir, e.Name())); err == nil {
+				o.logf("removed interrupted tag write %s", filepath.Join(dir, e.Name()))
+			}
+		}
+	}
+}
+
 // filesWithExt lists the files in dir with one of exts (any case), sorted.
 // Not filepath.Glob: album names hold "[" and "]" ("PROOF [Explicit]"),
 // which Glob reads as pattern syntax.
@@ -314,7 +340,7 @@ func filesWithExt(dir string, exts ...string) []string {
 	entries, _ := os.ReadDir(dir)
 	var out []string
 	for _, e := range entries {
-		if e.IsDir() {
+		if e.IsDir() || isTagTemp(e.Name()) {
 			continue
 		}
 		for _, ext := range exts {

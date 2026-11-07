@@ -71,3 +71,23 @@ func TestFilesWithExtBrackets(t *testing.T) {
 		t.Errorf("filesWithExt = %v", got)
 	}
 }
+
+// Interrupted tag writes are not tracks, and are swept before tagging.
+func TestTagTemps(t *testing.T) {
+	dir := t.TempDir()
+	names := []string{"01 - Song.m4a", "01 - Song-temp-80603.m4a", ".tidlr-retag-01 - Song.m4a", "02 - Attempt-1.m4a"}
+	for _, n := range names {
+		if err := os.WriteFile(filepath.Join(dir, n), nil, 0o644); err != nil {
+			t.Fatal(err)
+		}
+	}
+	got := filesWithExt(dir, ".m4a")
+	if len(got) != 2 || filepath.Base(got[0]) != "01 - Song.m4a" || filepath.Base(got[1]) != "02 - Attempt-1.m4a" {
+		t.Errorf("tracks = %v", got)
+	}
+	(&Organizer{}).sweepTagTemps(dir)
+	left, _ := os.ReadDir(dir)
+	if len(left) != 2 {
+		t.Errorf("after sweep: %v", left)
+	}
+}

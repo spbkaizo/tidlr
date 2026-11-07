@@ -58,7 +58,7 @@ func orderedTracks(ctx context.Context, w tagger.Writer, dir string) ([]string, 
 	var tracks []track
 	for _, e := range entries {
 		ext := strings.ToLower(filepath.Ext(e.Name()))
-		if e.IsDir() || (ext != ".m4a" && ext != ".mp4") || strings.HasPrefix(e.Name(), ".") {
+		if e.IsDir() || (ext != ".m4a" && ext != ".mp4") || strings.HasPrefix(e.Name(), ".") || isTagTemp(e.Name()) {
 			continue
 		}
 		t := track{path: filepath.Join(dir, e.Name())}

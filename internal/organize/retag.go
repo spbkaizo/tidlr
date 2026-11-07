@@ -166,6 +166,7 @@ func (o *Organizer) ApplyRetag(ctx context.Context, plan Retag) error {
 	if err := o.checkMounted(); err != nil {
 		return err
 	}
+	o.sweepTagTemps(plan.Dir)
 	if plan.Moves() {
 		if _, err := os.Stat(plan.NewDir); err == nil {
 			if err := absorbLeftovers(plan.NewDir, plan.Dir); err != nil {
