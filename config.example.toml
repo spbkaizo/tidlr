@@ -44,12 +44,17 @@ progress = true
 # --- Tagging and filing (replaces Picard) -----------------------------------
 # Set library_dir to have each downloaded album identified on MusicBrainz,
 # tagged the way Picard tags (MusicBrainz ids, label, barcode, original date,
-# genre/grouping/mood...) and filed as
-#   <library_dir>/Archive Albums/<Genre>/<Artist> - <Year> - <Album>/NN - Title.m4a
-# (soundtracks under "Archive Soundtracks", Various Artists compilations under
-# "Archive Compilations"). Leave it empty to keep albums in output_dir with
-# basic tags only. Needs AtomicParsley: brew install atomicparsley
+# genre/grouping/mood...) and filed in the library. Leave it empty to keep
+# albums in output_dir with basic tags only.
+# Needs AtomicParsley: brew install atomicparsley
 #library_dir = "/Volumes/music/FLAC"
+
+# How albums are arranged under library_dir:
+#   "artist" (default)  <Artist>/<Year> - <Album>/NN - Title.m4a
+#   "genre"             Archive Albums/<Genre>/<Artist> - <Year> - <Album>/NN - Title.m4a
+#                       (soundtracks under "Archive Soundtracks", Various
+#                       Artists compilations under "Archive Compilations")
+#library_layout = "artist"
 
 # Albums that cannot be identified on MusicBrainz, or that are already in the
 # library, are held here with their basic tags. Default: <output_dir>/_review
@@ -71,8 +76,8 @@ progress = true
 #[genre_merge]
 #"Punk Rock" = "Punk"
 
-# File an album with the artist's other albums: among the artist's folders
-# that are also one of the album's own genres, the one holding most of their
-# albums wins. Niche albums stay in niche folders unless tagged otherwise.
+# genre layout only. File an album with the artist's other albums: among the
+# artist's folders that are also one of the album's own genres, the one
+# holding most of their albums wins. Niche albums stay in niche folders unless tagged otherwise.
 # Unknown is ignored, as are Various Artists compilations.
 #keep_artist_together = true

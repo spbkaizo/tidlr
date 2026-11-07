@@ -832,10 +832,11 @@ func downloadOneAlbum(ctx context.Context, cfg config.Config, dl *tidal.Download
 	return out, artist, albumName, nil
 }
 
-// mustRetag fixes the genre folder of albums already in the library: for
-// each album under dirs (default: every Archive */Unknown folder) it works
-// out the genre from the album's own tags via Last.fm (then MusicBrainz),
-// and with apply rewrites the genre tags and moves the album into its genre
+// mustRetag fixes the genre of albums already in the library: for each
+// album under dirs (default: every Archive */Unknown folder in the genre
+// layout, the whole library otherwise) it works out the genre from the
+// album's own tags via Last.fm (then MusicBrainz), and with apply rewrites
+// the genre tags and, in the genre layout, moves the album into its genre
 // folder. Without apply it only reports, which doubles as a check of how
 // often the genre logic agrees with folders lastfmng chose.
 func mustRetag(ctx context.Context, cfg config.Config, q *queue.Queue, dirs []string, apply bool, limit int) {
@@ -843,8 +844,10 @@ func mustRetag(ctx context.Context, cfg config.Config, q *queue.Queue, dirs []st
 		log.Fatalf("retag: set library_dir in the config first")
 	}
 	org := mustOrganizer(cfg, log.Default(), q)
-	if len(dirs) == 0 {
+	if len(dirs) == 0 && cfg.LibraryLayout.ByGenre() {
 		dirs, _ = filepath.Glob(filepath.Join(cfg.LibraryDir, "Archive *", "Unknown"))
+	} else if len(dirs) == 0 {
+		dirs = []string{cfg.LibraryDir}
 	}
 	var albums []string
 	for _, d := range dirs {
@@ -933,6 +936,7 @@ func mustOrganizer(cfg config.Config, logger *log.Logger, q *queue.Queue) *organ
 		Lists:      lists,
 		Tagger:     tagger.Writer{Bin: cfg.AtomicParsleyBin},
 		LibraryDir: cfg.LibraryDir,
+		Layout:     cfg.LibraryLayout,
 		ReviewDir:  cfg.ReviewDir,
 		LocalDir:   home,
 

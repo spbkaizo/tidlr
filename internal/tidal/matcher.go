@@ -17,7 +17,7 @@ type Match struct {
 	Artist       string
 	Mode         string // primary audioMode (STEREO, DOLBY_ATMOS, ...)
 	Explicit     bool
-	Lossless     bool  // true => downloadable as lossless FLAC
+	Lossless     bool // true => downloadable as lossless FLAC
 	Score        float64
 	FromSearchID int64 // the album search returned before edition upgrade
 	Upgraded     bool  // true if we swapped to a better edition than search's hit

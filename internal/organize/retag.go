@@ -14,8 +14,8 @@ import (
 )
 
 // Retag is a planned genre fix for an album already in the library: its new
-// genre tags and the genre folder it belongs in. Only the genre part of the
-// path changes; the album folder keeps its name.
+// genre tags and, in the genre layout, the genre folder it belongs in. Only
+// the genre part of the path changes; the album folder keeps its name.
 type Retag struct {
 	Dir      string // current album folder
 	NewDir   string // where it belongs; == Dir when the folder is right
@@ -96,6 +96,10 @@ func (o *Organizer) PlanRetag(ctx context.Context, dir string) (Retag, error) {
 	if err != nil {
 		// Leave the album alone rather than decide on partial information.
 		return plan, fmt.Errorf("Last.fm: %w", err)
+	}
+	if !o.Layout.ByGenre() {
+		plan.Result.Grouping = o.merged(plan.Result.Grouping)
+		return plan, nil // no genre folders: only the tags change
 	}
 	o.loadArtists()
 	archive := filepath.Base(filepath.Dir(filepath.Dir(dir)))

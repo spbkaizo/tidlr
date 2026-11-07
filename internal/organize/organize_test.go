@@ -11,6 +11,7 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/simonb/tidlr/internal/filing"
 	"github.com/simonb/tidlr/internal/genre"
@@ -76,6 +77,20 @@ func organizer(t *testing.T) *Organizer {
 	return &Organizer{
 		MB: mb, Prefs: musicbrainz.DefaultPrefs, Lists: genre.Builtin(), Tagger: tagger.Writer{},
 		LibraryDir: filepath.Join(root, "library"), ReviewDir: filepath.Join(root, "review"),
+		Layout: filing.LayoutGenre,
+	}
+}
+
+func TestOrganizeArtistLayout(t *testing.T) {
+	a := downloaded(t, "440082667") // Geese — Getting Killed
+	o := organizer(t)
+	o.Layout = filing.LayoutArtist
+	dest, err := o.Organize(context.Background(), a)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if want := filepath.Join(o.LibraryDir, "Geese", "2025 - Getting Killed"); dest != want {
+		t.Errorf("filed at %s, want %s", dest, want)
 	}
 }
 
@@ -188,6 +203,9 @@ func TestRetagUnknownAlbum(t *testing.T) {
 // A Last.fm outage must not change a filed album's genre: retag reports an
 // error and leaves the album alone instead of falling back to MusicBrainz.
 func TestRetagLeavesAlbumOnLastFMError(t *testing.T) {
+	saved := genre.RetryWaits
+	genre.RetryWaits = []time.Duration{time.Millisecond}
+	defer func() { genre.RetryWaits = saved }()
 	o := organizer(t)
 	filed, err := o.Organize(context.Background(), downloaded(t, "440082667"))
 	if err != nil {

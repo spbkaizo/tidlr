@@ -32,7 +32,10 @@ type Organizer struct {
 	Tagger tagger.Writer
 
 	LibraryDir string // e.g. /Volumes/music/FLAC
-	ReviewDir  string // albums held for review: <ReviewDir>/<Artist>/<Album>
+	// Layout arranges the library. KeepArtistTogether, and retag's moves,
+	// only apply to filing.LayoutGenre, the one with genre folders.
+	Layout    filing.Layout
+	ReviewDir string // albums held for review: <ReviewDir>/<Artist>/<Album>
 	// LocalDir is a folder on the local disk (the home folder); a library
 	// under /Volumes on the same disk means its share is not mounted.
 	LocalDir string
@@ -121,12 +124,17 @@ func (o *Organizer) Organize(ctx context.Context, a Album) (string, error) {
 		TotalDiscs:   len(r.Media),
 	}
 	// Merged genres and the artist's other albums can override the genre.
-	name := filepath.Base(filing.AlbumDir(fa))
-	if grouping, reason := o.decideGrouping(g, filing.Subdir(fa), name, "", ""); grouping != g.Grouping {
-		if reason == "artist" {
-			o.logf("filing with the artist's other albums in %s (genre says %s)", grouping, orUnknown(g.Grouping))
+	if o.Layout.ByGenre() {
+		name := filepath.Base(o.Layout.AlbumDir(fa))
+		if grouping, reason := o.decideGrouping(g, filing.Subdir(fa), name, "", ""); grouping != g.Grouping {
+			if reason == "artist" {
+				o.logf("filing with the artist's other albums in %s (genre says %s)", grouping, orUnknown(g.Grouping))
+			}
+			g.Grouping, fa.Grouping = grouping, grouping
 		}
-		g.Grouping, fa.Grouping = grouping, grouping
+	} else {
+		g.Grouping = o.merged(g.Grouping)
+		fa.Grouping = g.Grouping
 	}
 
 	var moves []filing.Move
@@ -151,7 +159,7 @@ func (o *Organizer) Organize(ctx context.Context, a Album) (string, error) {
 	if err := o.checkMounted(); err != nil {
 		return "", err
 	}
-	dest := filepath.Join(o.LibraryDir, filing.AlbumDir(fa))
+	dest := filepath.Join(o.LibraryDir, o.Layout.AlbumDir(fa))
 	if err := filing.Place(dest, moves); err != nil {
 		if errors.Is(err, filing.ErrExists) {
 			return o.review(a, "already in the library at "+dest)

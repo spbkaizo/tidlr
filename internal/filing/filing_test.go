@@ -4,7 +4,7 @@ import "testing"
 
 // Cases taken from albums Picard filed in the user's library; the expected
 // paths are the real ones on disk.
-func TestPath(t *testing.T) {
+func TestPathGenre(t *testing.T) {
 	cases := []struct {
 		name  string
 		album Album
@@ -55,8 +55,48 @@ func TestPath(t *testing.T) {
 		},
 	}
 	for _, tc := range cases {
-		if got := Path("", tc.album, tc.track, ".m4a"); got != tc.want {
+		if got := LayoutGenre.Path("", tc.album, tc.track, ".m4a"); got != tc.want {
 			t.Errorf("%s:\n got  %s\n want %s", tc.name, got, tc.want)
 		}
+	}
+}
+
+func TestPathArtist(t *testing.T) {
+	cases := []struct {
+		album Album
+		track Track
+		want  string
+	}{
+		{
+			Album{AlbumArtist: "Kendrick Lamar", Title: "DAMN.", Grouping: "Hip-Hop", OriginalYear: "2017", TotalDiscs: 1},
+			Track{Disc: 1, Number: 1, Title: "BLOOD."},
+			"Kendrick Lamar/2017 - DAMN_/01 - BLOOD..m4a",
+		},
+		{
+			Album{AlbumArtist: "Various Artists", Title: "The Matrix", ReleaseTypes: []string{"album", "soundtrack"}, OriginalYear: "1999", TotalDiscs: 1},
+			Track{Disc: 1, Number: 13, Title: "Wake Up"},
+			"Various Artists/1999 - The Matrix/13 - Wake Up.m4a",
+		},
+		{
+			Album{Artist: "AC/DC", Title: "Live: 1992", TotalDiscs: 2},
+			Track{Disc: 2, Number: 3, Title: "Either/Or"},
+			"AC_DC/0000 - Live~ 1992/203 - Either_Or.m4a",
+		},
+	}
+	for _, tc := range cases {
+		if got := LayoutArtist.Path("", tc.album, tc.track, ".m4a"); got != tc.want {
+			t.Errorf("got  %s\nwant %s", got, tc.want)
+		}
+	}
+}
+
+func TestParseLayout(t *testing.T) {
+	for in, want := range map[string]Layout{"": LayoutArtist, "artist": LayoutArtist, " Genre ": LayoutGenre} {
+		if got, err := ParseLayout(in); err != nil || got != want {
+			t.Errorf("ParseLayout(%q) = %q, %v; want %q", in, got, err, want)
+		}
+	}
+	if _, err := ParseLayout("decade"); err == nil {
+		t.Error("ParseLayout(decade) should fail")
 	}
 }

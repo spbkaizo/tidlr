@@ -5,6 +5,7 @@ import (
 	"path/filepath"
 	"testing"
 
+	"github.com/simonb/tidlr/internal/filing"
 	"github.com/simonb/tidlr/internal/genre"
 )
 
@@ -30,7 +31,7 @@ func TestDecideGrouping(t *testing.T) {
 	dir("Archive Albums/Electronic/Goldie - 1998 - Saturnz Return")
 	dir("Archive Albums/Electronic/Goldie - 2017 - The Journey Man")
 
-	o := &Organizer{LibraryDir: lib, Merge: map[string]string{"Punk Rock": "Punk"}, KeepArtistTogether: true}
+	o := &Organizer{LibraryDir: lib, Layout: filing.LayoutGenre, Merge: map[string]string{"Punk Rock": "Punk"}, KeepArtistTogether: true}
 	o.loadArtists()
 
 	cases := []struct {

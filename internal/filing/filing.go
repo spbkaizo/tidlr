@@ -1,5 +1,9 @@
 // Package filing decides where a tagged album lives in the library and moves
-// it there. The layout ports the user's Picard file naming script:
+// it there. Two layouts are offered. LayoutArtist, the default, is the usual
+//
+//	<albumartist>/<year|0000> - <album>/<disc><NN> - <title>
+//
+// LayoutGenre ports a Picard file naming script that files by genre:
 //
 //	<sub>/<albumgrouping|Unknown>/<albumartist> - <year|0000> - <album>/<disc><NN> - <title>
 //
@@ -19,6 +23,30 @@ import (
 
 	"github.com/simonb/tidlr/internal/fsname"
 )
+
+// Layout is how albums are arranged in the library.
+type Layout string
+
+const (
+	// LayoutArtist files albums as <artist>/<year> - <album>/.
+	LayoutArtist Layout = "artist"
+	// LayoutGenre files albums as Archive Albums/<genre>/<artist> - <year> - <album>/.
+	LayoutGenre Layout = "genre"
+)
+
+// ParseLayout checks a library_layout setting; "" is LayoutArtist.
+func ParseLayout(s string) (Layout, error) {
+	switch l := Layout(strings.ToLower(strings.TrimSpace(s))); l {
+	case "":
+		return LayoutArtist, nil
+	case LayoutArtist, LayoutGenre:
+		return l, nil
+	}
+	return "", fmt.Errorf("library_layout %q: want %q or %q", s, LayoutArtist, LayoutGenre)
+}
+
+// ByGenre reports whether the layout has genre folders.
+func (l Layout) ByGenre() bool { return l == LayoutGenre }
 
 // Album is the album-level metadata the layout depends on.
 type Album struct {
@@ -68,11 +96,7 @@ func Subdir(a Album) string {
 }
 
 // AlbumDir is the album's folder relative to the library root.
-func AlbumDir(a Album) string {
-	grouping := a.Grouping
-	if grouping == "" {
-		grouping = "Unknown"
-	}
+func (l Layout) AlbumDir(a Album) string {
 	artist := a.AlbumArtist
 	if artist == "" {
 		artist = a.Artist
@@ -85,6 +109,13 @@ func AlbumDir(a Album) string {
 		}
 	}
 	album := strings.ReplaceAll(value(a.Title), "...", "…")
+	if !l.ByGenre() {
+		return filepath.Join(clean(value(artist), year+" - "+album)...)
+	}
+	grouping := a.Grouping
+	if grouping == "" {
+		grouping = "Unknown"
+	}
 	name := value(artist) + " - " + year + " - " + album
 	return filepath.Join(clean(Subdir(a), value(grouping), name)...)
 }
@@ -107,8 +138,8 @@ func TrackFile(a Album, t Track) string {
 }
 
 // Path is a track's full path under root, with ext (e.g. ".m4a").
-func Path(root string, a Album, t Track, ext string) string {
-	return filepath.Join(root, AlbumDir(a), TrackFile(a, t)+ext)
+func (l Layout) Path(root string, a Album, t Track, ext string) string {
+	return filepath.Join(root, l.AlbumDir(a), TrackFile(a, t)+ext)
 }
 
 // clean applies the script's character replacement and Picard's path rules to

@@ -8,6 +8,8 @@ import (
 	"path/filepath"
 
 	"github.com/BurntSushi/toml"
+
+	"github.com/simonb/tidlr/internal/filing"
 )
 
 // Config holds all tunable settings for the pipeline.
@@ -49,9 +51,12 @@ type Config struct {
 
 	// LibraryDir, when set, replaces Picard: each downloaded album is
 	// identified on MusicBrainz, tagged the way Picard tags, and filed under
-	// <LibraryDir>/Archive Albums/<Genre>/<Artist> - <Year> - <Album>/.
-	// Empty keeps albums in OutputDir with basic tags only.
+	// LibraryDir as LibraryLayout says. Empty keeps albums in OutputDir with
+	// basic tags only.
 	LibraryDir string `toml:"library_dir"`
+	// LibraryLayout is "artist" (<Artist>/<Year> - <Album>/, the default) or
+	// "genre" (Archive Albums/<Genre>/<Artist> - <Year> - <Album>/).
+	LibraryLayout filing.Layout `toml:"library_layout"`
 	// ReviewDir holds albums that could not be identified or filed, with
 	// their basic tags. Default <OutputDir>/_review.
 	ReviewDir string `toml:"review_dir"`
@@ -113,6 +118,11 @@ func Load(path string) (Config, error) {
 	if cfg.ReviewDir == "" {
 		cfg.ReviewDir = filepath.Join(cfg.OutputDir, "_review")
 	}
+	layout, err := filing.ParseLayout(string(cfg.LibraryLayout))
+	if err != nil {
+		return cfg, fmt.Errorf("%s: %w", path, err)
+	}
+	cfg.LibraryLayout = layout
 	if cfg.LastFMNGDefaults == "" {
 		if home, err := os.UserHomeDir(); err == nil {
 			cfg.LastFMNGDefaults = filepath.Join(home, "Library", "Preferences", "MusicBrainz", "Picard", "plugins", "lastfmng", "defaults.ini")

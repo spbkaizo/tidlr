@@ -194,7 +194,7 @@ func reasonIf(changed bool) string {
 // loadArtists builds the artist index on first use.
 func (o *Organizer) loadArtists() {
 	o.artistsOnce.Do(func() {
-		if o.KeepArtistTogether && o.LibraryDir != "" {
+		if o.KeepArtistTogether && o.Layout.ByGenre() && o.LibraryDir != "" {
 			o.artists = loadArtistIndex(o.LibraryDir)
 		}
 	})
