@@ -5,6 +5,7 @@ import (
 	"context"
 	"fmt"
 	"os/exec"
+	"path/filepath"
 	"regexp"
 	"strings"
 )
@@ -18,11 +19,10 @@ var atomLine = regexp.MustCompile(`^Atom "([^"]+)"(?: \[[^;\]]*;([^\]]+)\])? con
 // freeform atoms, by their name ("MusicBrainz Album Id"). Repeated freeform
 // atoms (Picard's multi-values) are joined with MultiSep.
 func (w Writer) Read(ctx context.Context, path string) (map[string]string, error) {
-	bin := w.Bin
-	if bin == "" {
-		bin = "AtomicParsley"
-	}
-	out, err := exec.CommandContext(ctx, bin, path, "-t").Output()
+	dir, base := filepath.Split(path)
+	cmd := exec.CommandContext(ctx, w.bin(), base, "-t")
+	cmd.Dir = dir // see run: keeps long paths within AtomicParsley's limit
+	out, err := cmd.Output()
 	if err != nil {
 		return nil, fmt.Errorf("AtomicParsley -t %s: %w", path, err)
 	}

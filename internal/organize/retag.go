@@ -54,8 +54,7 @@ func AlbumDirs(root string) ([]string, error) {
 // back to the MusicBrainz genres of the release its tags name.
 func (o *Organizer) PlanRetag(ctx context.Context, dir string) (Retag, error) {
 	plan := Retag{Dir: dir, NewDir: dir, Current: filepath.Base(filepath.Dir(dir))}
-	matches, _ := filepath.Glob(filepath.Join(dir, "*.m4a"))
-	sort.Strings(matches)
+	matches := filesWithExt(dir, ".m4a")
 	if len(matches) == 0 {
 		plan.SkipNote = "no .m4a files"
 		return plan, nil

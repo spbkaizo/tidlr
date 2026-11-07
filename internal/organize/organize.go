@@ -286,13 +286,30 @@ func trackFile(dir, base string) (string, error) {
 // (move_additional_files): cover art and lyrics.
 func extras(dir string) []filing.Move {
 	var out []filing.Move
-	for _, pattern := range []string{"*.jpg", "*.png", "*.lrc", "*.txt"} {
-		matches, _ := filepath.Glob(filepath.Join(dir, pattern))
-		for _, m := range matches {
-			out = append(out, filing.Move{From: m, Name: filepath.Base(m)})
-		}
+	for _, m := range filesWithExt(dir, ".jpg", ".png", ".lrc", ".txt") {
+		out = append(out, filing.Move{From: m, Name: filepath.Base(m)})
 	}
 	return out
+}
+
+// filesWithExt lists the files in dir with one of exts (any case), sorted.
+// Not filepath.Glob: album names hold "[" and "]" ("PROOF [Explicit]"),
+// which Glob reads as pattern syntax.
+func filesWithExt(dir string, exts ...string) []string {
+	entries, _ := os.ReadDir(dir)
+	var out []string
+	for _, e := range entries {
+		if e.IsDir() {
+			continue
+		}
+		for _, ext := range exts {
+			if strings.EqualFold(filepath.Ext(e.Name()), ext) {
+				out = append(out, filepath.Join(dir, e.Name()))
+				break
+			}
+		}
+	}
+	return out // ReadDir sorts by name
 }
 
 // checkMounted verifies the library share is mounted and writable.

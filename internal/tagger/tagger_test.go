@@ -100,7 +100,12 @@ func TestWriteRoundTrip(t *testing.T) {
 			t.Skipf("%s not installed", bin)
 		}
 	}
-	path := filepath.Join(t.TempDir(), "t.m4a")
+	// A path over 255 bytes, which AtomicParsley refuses when given whole.
+	dir := filepath.Join(t.TempDir(), strings.Repeat("d", 120), strings.Repeat("e", 120))
+	if err := os.MkdirAll(dir, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	path := filepath.Join(dir, "t.m4a")
 	gen := exec.Command("ffmpeg", "-v", "error", "-f", "lavfi", "-i", "sine=frequency=440:duration=1", "-c:a", "alac", path)
 	if out, err := gen.CombinedOutput(); err != nil {
 		t.Fatalf("ffmpeg: %v: %s", err, out)
@@ -112,7 +117,16 @@ func TestWriteRoundTrip(t *testing.T) {
 	if err := (Writer{}).Write(context.Background(), path, tags); err != nil {
 		t.Fatal(err)
 	}
-	out, err := exec.Command("AtomicParsley", path, "-t").CombinedOutput()
+	read, err := (Writer{}).Read(context.Background(), path)
+	if err != nil {
+		t.Fatalf("read back: %v", err)
+	}
+	if read["MusicBrainz Album Id"] != "rel-1" {
+		t.Errorf("Read: MusicBrainz Album Id = %q", read["MusicBrainz Album Id"])
+	}
+	read2 := exec.Command("AtomicParsley", filepath.Base(path), "-t")
+	read2.Dir = dir
+	out, err := read2.CombinedOutput()
 	if err != nil {
 		t.Fatalf("read back: %v: %s", err, out)
 	}

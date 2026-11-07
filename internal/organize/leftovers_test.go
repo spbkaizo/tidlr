@@ -54,3 +54,20 @@ func TestAbsorbLeftovers(t *testing.T) {
 		t.Errorf("real copy: err = %v", err)
 	}
 }
+
+// Album folders can hold "[...]", which filepath.Glob would read as a pattern.
+func TestFilesWithExtBrackets(t *testing.T) {
+	dir := filepath.Join(t.TempDir(), "Tricky - 2017 - PROOF [Explicit]")
+	if err := os.MkdirAll(dir, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	for _, n := range []string{"02 - b.m4a", "01 - a.M4A", "cover.jpg"} {
+		if err := os.WriteFile(filepath.Join(dir, n), nil, 0o644); err != nil {
+			t.Fatal(err)
+		}
+	}
+	got := filesWithExt(dir, ".m4a")
+	if len(got) != 2 || filepath.Base(got[0]) != "01 - a.M4A" {
+		t.Errorf("filesWithExt = %v", got)
+	}
+}

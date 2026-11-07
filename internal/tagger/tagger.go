@@ -94,14 +94,15 @@ type Writer struct {
 // on that error the tagged file is written beside the original and renamed
 // over it; the original stays untouched until the rename.
 func (w Writer) Write(ctx context.Context, path string, t Tags) error {
-	err := w.run(ctx, t.Args(path))
+	dir, base := filepath.Split(path)
+	err := w.run(ctx, dir, t.Args(base))
 	if err == nil || !strings.Contains(err.Error(), "insufficient space to retag") {
 		return wrapErr(path, err)
 	}
-	tmp := filepath.Join(filepath.Dir(path), ".tidlr-retag-"+filepath.Base(path))
-	args := t.Args(path)
-	args = append(args[:len(args)-1], "--output", tmp) // replace --overWrite
-	if err := w.run(ctx, args); err != nil {
+	tmp := filepath.Join(dir, ".tidlr-retag-"+base)
+	args := t.Args(base)
+	args = append(args[:len(args)-1], "--output", filepath.Base(tmp)) // replace --overWrite
+	if err := w.run(ctx, dir, args); err != nil {
 		os.Remove(tmp)
 		return wrapErr(path, err)
 	}
@@ -112,18 +113,25 @@ func (w Writer) Write(ctx context.Context, path string, t Tags) error {
 	return nil
 }
 
-func (w Writer) run(ctx context.Context, args []string) error {
-	bin := w.Bin
-	if bin == "" {
-		bin = "AtomicParsley"
-	}
-	cmd := exec.CommandContext(ctx, bin, args...)
+// run runs AtomicParsley in dir, which args' file names are relative to:
+// AtomicParsley refuses paths over 255 bytes, which deep library folders
+// reach, while a file name alone stays within it.
+func (w Writer) run(ctx context.Context, dir string, args []string) error {
+	cmd := exec.CommandContext(ctx, w.bin(), args...)
+	cmd.Dir = dir
 	var out bytes.Buffer
 	cmd.Stdout, cmd.Stderr = &out, &out
 	if err := cmd.Run(); err != nil {
 		return fmt.Errorf("%w: %s", err, strings.TrimSpace(lastLines(out.String(), 3)))
 	}
 	return nil
+}
+
+func (w Writer) bin() string {
+	if w.Bin == "" {
+		return "AtomicParsley"
+	}
+	return w.Bin
 }
 
 func wrapErr(path string, err error) error {
