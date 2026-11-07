@@ -2,8 +2,10 @@ package tagger
 
 import (
 	"context"
+	"os"
 	"os/exec"
 	"path/filepath"
+	"runtime"
 	"strings"
 	"testing"
 
@@ -127,5 +129,42 @@ func TestWriteRoundTrip(t *testing.T) {
 		if !strings.Contains(got, want) {
 			t.Errorf("missing %s in:\n%s", want, got)
 		}
+	}
+}
+
+// TestWriteFallback: when the in-place update fails with "insufficient space
+// to retag", the file is written out whole and renamed over the original.
+func TestWriteFallback(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		t.Skip("uses a shell script as AtomicParsley")
+	}
+	dir := t.TempDir()
+	bin := filepath.Join(dir, "fakeap")
+	script := `#!/bin/sh
+src=$1; out=
+while [ $# -gt 0 ]; do
+	case $1 in
+	--overWrite) echo "AtomicParsley error: the insufficient space to retag the source file (2!=1)."; exit 1 ;;
+	--output) out=$2; shift ;;
+	esac
+	shift
+done
+printf 'tagged' > "$out"
+`
+	if err := os.WriteFile(bin, []byte(script), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	path := filepath.Join(dir, "01 - a.m4a")
+	if err := os.WriteFile(path, []byte("orig"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	if err := (Writer{Bin: bin}).Write(context.Background(), path, Tags{Grouping: "Folk"}); err != nil {
+		t.Fatal(err)
+	}
+	if b, _ := os.ReadFile(path); string(b) != "tagged" {
+		t.Errorf("file = %q, want the rewritten copy", b)
+	}
+	if left, _ := filepath.Glob(filepath.Join(dir, ".tidlr-retag-*")); len(left) > 0 {
+		t.Errorf("temp files left: %v", left)
 	}
 }

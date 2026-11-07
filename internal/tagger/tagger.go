@@ -12,7 +12,9 @@ import (
 	"bytes"
 	"context"
 	"fmt"
+	"os"
 	"os/exec"
+	"path/filepath"
 	"strconv"
 	"strings"
 )
@@ -86,18 +88,49 @@ type Writer struct {
 }
 
 // Write tags the file at path in place.
+//
+// Some files make AtomicParsley's in-place update fail ("insufficient space
+// to retag the source file") although it can still write them out whole, so
+// on that error the tagged file is written beside the original and renamed
+// over it; the original stays untouched until the rename.
 func (w Writer) Write(ctx context.Context, path string, t Tags) error {
+	err := w.run(ctx, t.Args(path))
+	if err == nil || !strings.Contains(err.Error(), "insufficient space to retag") {
+		return wrapErr(path, err)
+	}
+	tmp := filepath.Join(filepath.Dir(path), ".tidlr-retag-"+filepath.Base(path))
+	args := t.Args(path)
+	args = append(args[:len(args)-1], "--output", tmp) // replace --overWrite
+	if err := w.run(ctx, args); err != nil {
+		os.Remove(tmp)
+		return wrapErr(path, err)
+	}
+	if err := os.Rename(tmp, path); err != nil {
+		os.Remove(tmp)
+		return err
+	}
+	return nil
+}
+
+func (w Writer) run(ctx context.Context, args []string) error {
 	bin := w.Bin
 	if bin == "" {
 		bin = "AtomicParsley"
 	}
-	cmd := exec.CommandContext(ctx, bin, t.Args(path)...)
+	cmd := exec.CommandContext(ctx, bin, args...)
 	var out bytes.Buffer
 	cmd.Stdout, cmd.Stderr = &out, &out
 	if err := cmd.Run(); err != nil {
-		return fmt.Errorf("AtomicParsley %s: %w: %s", path, err, strings.TrimSpace(lastLines(out.String(), 3)))
+		return fmt.Errorf("%w: %s", err, strings.TrimSpace(lastLines(out.String(), 3)))
 	}
 	return nil
+}
+
+func wrapErr(path string, err error) error {
+	if err == nil {
+		return nil
+	}
+	return fmt.Errorf("AtomicParsley %s: %w", path, err)
 }
 
 func lastLines(s string, n int) string {

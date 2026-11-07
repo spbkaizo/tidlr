@@ -73,44 +73,24 @@ func (c *LastFM) TopTags(ctx context.Context, method string, args map[string]str
 			}
 		}
 	}
-	if d := time.Until(c.last.Add(c.Interval)); d > 0 {
+	var (
+		body toptagsBody
+		err  error
+	)
+	for attempt := 0; ; attempt++ {
+		var retry bool
+		body, retry, err = c.get(ctx, method, params)
+		if err == nil || !retry || attempt == len(RetryWaits) {
+			break
+		}
 		select {
 		case <-ctx.Done():
 			return nil, ctx.Err()
-		case <-time.After(d):
+		case <-time.After(RetryWaits[attempt]):
 		}
 	}
-	c.last = time.Now()
-
-	req, err := http.NewRequestWithContext(ctx, http.MethodGet, c.BaseURL+"?"+params.Encode(), nil)
 	if err != nil {
 		return nil, err
-	}
-	resp, err := c.HTTP.Do(req)
-	if err != nil {
-		// The URL in a transport error carries the API key: don't log it.
-		return nil, fmt.Errorf("last.fm %s: %s", method, redactKey(err.Error(), c.APIKey))
-	}
-	defer resp.Body.Close()
-	var body struct {
-		Error   int    `json:"error"`
-		Message string `json:"message"`
-		TopTags struct {
-			Tag []struct {
-				Name  string          `json:"name"`
-				Count json.RawMessage `json:"count"`
-			} `json:"tag"`
-		} `json:"toptags"`
-	}
-	if err := json.NewDecoder(resp.Body).Decode(&body); err != nil {
-		return nil, fmt.Errorf("last.fm %s: HTTP %d: %w", method, resp.StatusCode, err)
-	}
-	switch body.Error {
-	case 0:
-	case 6: // album/artist/track not found
-		body.TopTags.Tag = nil
-	default:
-		return nil, fmt.Errorf("last.fm %s: error %d: %s", method, body.Error, body.Message)
 	}
 	var tags []Tag
 	for _, t := range body.TopTags.Tag {
@@ -128,6 +108,59 @@ func (c *LastFM) TopTags(ctx context.Context, method string, args map[string]str
 		}
 	}
 	return tags, nil
+}
+
+// RetryWaits are the pauses before retrying a request that failed in a way
+// worth trying again: a network error, a server error, or Last.fm's own
+// "operation failed", "service offline", "temporary error" and rate limit.
+var RetryWaits = []time.Duration{2 * time.Second, 10 * time.Second, 30 * time.Second}
+
+type toptagsBody struct {
+	Error   int    `json:"error"`
+	Message string `json:"message"`
+	TopTags struct {
+		Tag []struct {
+			Name  string          `json:"name"`
+			Count json.RawMessage `json:"count"`
+		} `json:"tag"`
+	} `json:"toptags"`
+}
+
+// get makes one request, keeping to the request interval. retry reports
+// whether a failure is worth trying again. Callers hold c.mu.
+func (c *LastFM) get(ctx context.Context, method string, params url.Values) (body toptagsBody, retry bool, err error) {
+	if d := time.Until(c.last.Add(c.Interval)); d > 0 {
+		select {
+		case <-ctx.Done():
+			return body, false, ctx.Err()
+		case <-time.After(d):
+		}
+	}
+	c.last = time.Now()
+
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, c.BaseURL+"?"+params.Encode(), nil)
+	if err != nil {
+		return body, false, err
+	}
+	resp, err := c.HTTP.Do(req)
+	if err != nil {
+		// The URL in a transport error carries the API key: don't log it.
+		return body, ctx.Err() == nil, fmt.Errorf("last.fm %s: %s", method, redactKey(err.Error(), c.APIKey))
+	}
+	defer resp.Body.Close()
+	if err := json.NewDecoder(resp.Body).Decode(&body); err != nil {
+		return body, resp.StatusCode >= 500 || resp.StatusCode == http.StatusTooManyRequests,
+			fmt.Errorf("last.fm %s: HTTP %d: %w", method, resp.StatusCode, err)
+	}
+	switch body.Error {
+	case 0:
+	case 6: // album/artist/track not found
+		body.TopTags.Tag = nil
+	default:
+		retry := body.Error == 8 || body.Error == 11 || body.Error == 16 || body.Error == 29
+		return body, retry, fmt.Errorf("last.fm %s: error %d: %s", method, body.Error, body.Message)
+	}
+	return body, false, nil
 }
 
 func (c *LastFM) remember(key string, tags []Tag) {

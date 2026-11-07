@@ -6,6 +6,7 @@ import (
 	"net/http/httptest"
 	"sync/atomic"
 	"testing"
+	"time"
 )
 
 type mapStore map[string][]byte
@@ -55,5 +56,38 @@ func TestTopTagsPersistsOnlyTaggedResults(t *testing.T) {
 	}
 	if len(store) != 1 {
 		t.Errorf("store holds %d entries, want 1", len(store))
+	}
+}
+
+// TestTopTagsRetries: Last.fm's "operation failed" (error 8) is retried; an
+// invalid key (error 10) is not.
+func TestTopTagsRetries(t *testing.T) {
+	saved := RetryWaits
+	RetryWaits = []time.Duration{time.Millisecond, time.Millisecond}
+	defer func() { RetryWaits = saved }()
+
+	var hits atomic.Int32
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		n := hits.Add(1)
+		switch {
+		case r.URL.Query().Get("artist") == "BadKey":
+			w.Write([]byte(`{"error":10,"message":"Invalid API key"}`))
+		case n < 3:
+			w.Write([]byte(`{"error":8,"message":"Operation failed - Most likely the backend service failed. Please try again."}`))
+		default:
+			w.Write([]byte(`{"toptags":{"tag":[{"name":"folk","count":100}]}}`))
+		}
+	}))
+	defer srv.Close()
+	c := NewLastFM("k")
+	c.BaseURL, c.Interval = srv.URL, 0
+
+	tags, err := c.TopTags(context.Background(), "artist.gettoptags", map[string]string{"artist": "Gillian Welch"})
+	if err != nil || len(tags) != 1 || hits.Load() != 3 {
+		t.Fatalf("got %v, %v after %d requests; want 1 tag after 3", tags, err, hits.Load())
+	}
+	hits.Store(10)
+	if _, err := c.TopTags(context.Background(), "artist.gettoptags", map[string]string{"artist": "BadKey"}); err == nil || hits.Load() != 11 {
+		t.Errorf("bad key: err %v after %d requests; want an error after 1", err, hits.Load()-10)
 	}
 }
