@@ -94,3 +94,36 @@ func TestSearchQueries(t *testing.T) {
 		t.Errorf("short title: got %q", got)
 	}
 }
+
+func TestAcceptable(t *testing.T) {
+	now := time.Date(2026, 11, 8, 0, 0, 0, 0, time.UTC)
+	cases := []struct {
+		title, release, want string
+		ok                   bool
+	}{
+		// Real wrong picks from the all-time grab.
+		{"Devotion (WiMP Exclusive Interview)", "2012-08-28", "Devotion", false},
+		{"blómi (Edit)", "2023-10-11", "blómi", false},
+		{"Run The Jewels 3 (Instrumentals)", "2016-12-25", "Run The Jewels 2", false},
+		{"Run the Jewels 3", "2017-01-20", "Run The Jewels", false},
+		{"Atrocity Exhibition (10 Year Anniversary Edition)", "2026-11-13", "Atrocity Exhibition", false},
+		// What they should have been.
+		{"Devotion", "2012-08-20", "Devotion", true},
+		{"blómi", "2023-11-03", "blómi", true},
+		{"Run the Jewels 2", "2014-10-24", "Run The Jewels 2", true},
+		{"Atrocity Exhibition", "2016-09-27", "Atrocity Exhibition", true},
+		// Editions and asked-for versions still pass.
+		{"Visitor (Deluxe Edition)", "2025-01-01", "Visitor", true},
+		{"Roses (Remastered)", "2025-01-01", "Roses", true},
+		{"Live at Leeds (Live)", "1970-05-16", "Live at Leeds", true},
+		{"Sequel (Instrumentals)", "2020-01-01", "Sequel Instrumentals", true},
+		{"Tomorrows III", "2023-01-01", "Tomorrows II", false},
+		{"m b v", "2013-02-02", "mbv", true},
+	}
+	for _, c := range cases {
+		a := album(1, c.title, "a", []string{"STEREO"}, "LOSSLESS", false, c.release)
+		if got := acceptable(a, c.want, now); got != c.ok {
+			t.Errorf("acceptable(%q for %q) = %v, want %v", c.title, c.want, got, c.ok)
+		}
+	}
+}

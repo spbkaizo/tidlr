@@ -5,6 +5,7 @@ import (
 	"errors"
 	"regexp"
 	"strings"
+	"time"
 )
 
 // ErrNoMatch means no Tidal album confidently matched the requested name.
@@ -45,6 +46,28 @@ func normalize(s string) string {
 	s = nonAlnumRe.ReplaceAllString(s, " ")
 	s = wsRe.ReplaceAllString(s, " ")
 	return strings.TrimSpace(s)
+}
+
+// sideReleaseRe matches a bracketed tag marking something other than the
+// album itself: an instrumental or a cappella version, an interview, an edit,
+// remixes or a live set. Tidal files these under the album's own title, and
+// normalize strips the tag, so without this they pass for the album.
+// "Edition" is not "edit": the word boundary keeps deluxe editions.
+var sideReleaseRe = regexp.MustCompile(`(?i)[\(\[][^\)\]]*\b(instrumentals?|a ?cappellas?|interviews?|commentary|karaoke|edit|remix(?:es)?|live|demos?)\b[^\)\]]*[\)\]]`)
+
+// acceptable reports whether a can stand for wantTitle at all: not a side
+// release (unless one was asked for), the same sequel number ("Run the
+// Jewels" is not "Run the Jewels 3"), and already released. A pre-release
+// edition lists every track but serves only the few already out.
+func acceptable(a Album, wantTitle string, now time.Time) bool {
+	if m := sideReleaseRe.FindStringSubmatch(a.Title); m != nil &&
+		!strings.Contains(strings.ToLower(wantTitle), strings.ToLower(m[1])) {
+		return false
+	}
+	if TitleNumbers(normalize(a.Title)) != TitleNumbers(normalize(wantTitle)) {
+		return false
+	}
+	return !a.ReleaseTime().After(now)
 }
 
 // Normalize is the exported form of normalize.
@@ -116,12 +139,16 @@ type Matcher struct {
 func (m *Matcher) Match(ctx context.Context, wantArtist, wantTitle string) (Match, error) {
 	var matched *Album
 	var best float64
+	now := time.Now()
 	for _, query := range searchQueries(wantArtist, wantTitle) {
 		res, err := m.Client.Search(ctx, query)
 		if err != nil {
 			return Match{}, err
 		}
 		for i := range res.Albums.Items {
+			if !acceptable(res.Albums.Items[i], wantTitle, now) {
+				continue
+			}
 			s := nameScore(res.Albums.Items[i], wantArtist, wantTitle)
 			if matched == nil || s > best {
 				matched = &res.Albums.Items[i]
@@ -178,6 +205,7 @@ func (m *Matcher) bestEdition(ctx context.Context, matched Album, wantTitle stri
 	wantNorm := normalize(wantTitle)
 	matchedNorm := normalize(matched.Title)
 
+	now := time.Now()
 	best := matched
 	bestKey := editionRank(matched)
 	seen := map[int64]bool{matched.ID: true}
@@ -196,6 +224,9 @@ func (m *Matcher) bestEdition(ctx context.Context, matched Album, wantTitle stri
 			if similarityRatio(t, wantNorm) < sameAlbumTitleSim &&
 				similarityRatio(t, matchedNorm) < sameAlbumTitleSim {
 				continue // different album
+			}
+			if !acceptable(al, wantTitle, now) {
+				continue
 			}
 			if k := editionRank(al); k.better(bestKey) {
 				best, bestKey = al, k
