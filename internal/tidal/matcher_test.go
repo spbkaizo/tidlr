@@ -69,6 +69,36 @@ func TestNameScore(t *testing.T) {
 	}
 }
 
+func TestSameArtist(t *testing.T) {
+	cases := []struct {
+		got, want string
+		ok        bool
+	}{
+		// Real wrong pick: an exact title by someone else.
+		{"Pale Honey", "Jessie Ware", false},
+		{"Jessie Ware", "Jessie Ware", true},
+		{"Rhiannon Giddens with Francesco Turrisi", "Rhiannon Giddens", true},
+		{"ANOHNI and the Johnsons", "Anohni", true},
+		{"Nick Cave", "Nick Cave & Warren Ellis", true},
+		{"Run the Jewels", "Run The Jewels", true},
+		{"Earth", "Earth, Wind & Fire", true},
+		{"Metallica", "Olivia Rodrigo", false},
+	}
+	for _, c := range cases {
+		a := album(1, "x", c.got, []string{"STEREO"}, "LOSSLESS", false, "")
+		if got := sameArtist(a, c.want); got != c.ok {
+			t.Errorf("sameArtist(%q, %q) = %v, want %v", c.got, c.want, got, c.ok)
+		}
+	}
+	// Any credited artist counts, not just the first.
+	a := album(1, "x", "Warren Ellis", nil, "", false, "")
+	a.Artists = append(a.Artists, a.Artist)
+	a.Artists[0].Name = "Nick Cave"
+	if !sameArtist(a, "Nick Cave") {
+		t.Error("second credited artist not considered")
+	}
+}
+
 func TestReleaseTime(t *testing.T) {
 	got := album(1, "x", "a", nil, "", false, "2026-06-12").ReleaseTime()
 	want := time.Date(2026, 6, 12, 0, 0, 0, 0, time.UTC)
@@ -101,7 +131,7 @@ func TestAcceptable(t *testing.T) {
 		title, release, want string
 		ok                   bool
 	}{
-		// Real wrong picks from the all-time grab.
+		// Real wrong picks.
 		{"Devotion (WiMP Exclusive Interview)", "2012-08-28", "Devotion", false},
 		{"blómi (Edit)", "2023-10-11", "blómi", false},
 		{"Run The Jewels 3 (Instrumentals)", "2016-12-25", "Run The Jewels 2", false},

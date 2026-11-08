@@ -27,6 +27,9 @@ type Match struct {
 const (
 	// minScore is the blended artist+title similarity required to accept a hit.
 	minScore = 0.62
+	// minArtistSim is the artist similarity a hit needs on its own, whatever
+	// its title scores.
+	minArtistSim = 0.5
 	// sameAlbumTitleSim is how close a catalogue album's title must be to count
 	// as another edition of the matched album.
 	sameAlbumTitleSim = 0.80
@@ -85,6 +88,29 @@ func isLossless(a Album) bool {
 	default:
 		return false
 	}
+}
+
+// sameArtist reports whether any of a's artists can be wantArtist: similar
+// enough, or one name containing the other ("Anohni" in "ANOHNI and the
+// Johnsons"). Without it an exact title by someone else outscores minScore on
+// title alone (Pale Honey's "Devotion" for Jessie Ware's).
+func sameArtist(a Album, wantArtist string) bool {
+	want := normalize(wantArtist)
+	names := []string{a.Artist.Name}
+	for _, ar := range a.Artists {
+		names = append(names, ar.Name)
+	}
+	for _, n := range names {
+		got := normalize(n)
+		if got == "" {
+			continue
+		}
+		if similarityRatio(got, want) >= minArtistSim ||
+			strings.Contains(" "+got+" ", " "+want+" ") || strings.Contains(" "+want+" ", " "+got+" ") {
+			return true
+		}
+	}
+	return false
 }
 
 // nameScore blends title (0.6) and artist (0.4) similarity in [0,1].
@@ -146,7 +172,7 @@ func (m *Matcher) Match(ctx context.Context, wantArtist, wantTitle string) (Matc
 			return Match{}, err
 		}
 		for i := range res.Albums.Items {
-			if !acceptable(res.Albums.Items[i], wantTitle, now) {
+			if !acceptable(res.Albums.Items[i], wantTitle, now) || !sameArtist(res.Albums.Items[i], wantArtist) {
 				continue
 			}
 			s := nameScore(res.Albums.Items[i], wantArtist, wantTitle)
