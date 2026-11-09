@@ -211,9 +211,13 @@ func main() {
 		usage()
 		os.Exit(2)
 	}
+	// Flags may also follow the command (`tidlr retry -skipped`): the flag
+	// package stops at the first non-flag argument, so parse what follows it.
+	cmd := flag.Arg(0)
+	flag.CommandLine.Parse(flag.Args()[1:])
 
 	// `version` needs neither config nor queue; answer before either can fail.
-	if flag.Arg(0) == "version" {
+	if cmd == "version" {
 		fmt.Print(versionString())
 		return
 	}
@@ -240,7 +244,7 @@ func main() {
 		log.Fatalf("invalid --since %q: %v", *since, err)
 	}
 
-	switch flag.Arg(0) {
+	switch cmd {
 	case "login":
 		mustLogin(ctx, cfg)
 	case "scrape":
@@ -272,9 +276,9 @@ func main() {
 		}
 		mustRun(ctx, cfg, q, *force)
 	case "retag":
-		mustRetag(ctx, cfg, q, flag.Args()[1:], *apply, *limit)
+		mustRetag(ctx, cfg, q, flag.Args(), *apply, *limit)
 	case "file":
-		mustFile(ctx, cfg, q, flag.Args()[1:])
+		mustFile(ctx, cfg, q, flag.Args())
 	case "status":
 		mustStatus(q)
 	default:
