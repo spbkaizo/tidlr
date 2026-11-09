@@ -177,3 +177,31 @@ func (c *Client) LookupRelease(ctx context.Context, id string) (Release, error) 
 	err := c.get(ctx, "release/"+url.PathEscape(id), url.Values{"inc": {releaseInc}}, &r)
 	return r, err
 }
+
+// browseInc is what fitting and ranking a release needs from a browse: track
+// lengths and ISRCs, and the country and format prefs compare.
+const browseInc = "artist-credits recordings media isrcs"
+
+// ReleasesInGroup returns every release in a release group with its tracks,
+// paging through the browse endpoint.
+func (c *Client) ReleasesInGroup(ctx context.Context, groupID string) ([]Release, error) {
+	var out []Release
+	for offset := 0; ; {
+		var res struct {
+			Count    int       `json:"release-count"`
+			Releases []Release `json:"releases"`
+		}
+		err := c.get(ctx, "release", url.Values{
+			"release-group": {groupID}, "inc": {browseInc},
+			"limit": {"100"}, "offset": {strconv.Itoa(offset)},
+		}, &res)
+		if err != nil {
+			return out, err
+		}
+		out = append(out, res.Releases...)
+		offset += len(res.Releases)
+		if len(res.Releases) == 0 || offset >= res.Count {
+			return out, nil
+		}
+	}
+}

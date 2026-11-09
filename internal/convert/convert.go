@@ -47,6 +47,13 @@ func (c *Converter) ConvertFlat(ctx context.Context, name, srcDir string, lossle
 	return c.convertDir(ctx, srcDir, out)
 }
 
+// ConvertInto delivers srcDir's audio into outDir, an existing album folder:
+// a track the album lacked, fetched on its own.
+func (c *Converter) ConvertInto(ctx context.Context, srcDir, outDir string) error {
+	_, err := c.convertDir(ctx, srcDir, outDir)
+	return err
+}
+
 // convertDir transcodes/copies every audio file in srcDir into outDir. A sibling
 // cover.jpg is embedded into transcoded tracks; tracks that already embed art
 // (e.g. playlist tracks) keep it via the transcode's stream copy.

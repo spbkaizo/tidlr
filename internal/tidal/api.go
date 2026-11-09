@@ -5,7 +5,7 @@ import (
 	"strconv"
 )
 
-// Search runs a Tidal catalogue search and returns album hits.
+// Search runs a Tidal catalogue search and returns its album and track hits.
 func (c *Client) Search(ctx context.Context, query string) (SearchResult, error) {
 	var res SearchResult
 	err := c.get(ctx, "search", map[string]string{

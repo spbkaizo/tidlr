@@ -13,6 +13,7 @@ import (
 	"path/filepath"
 	"regexp"
 	"sort"
+	"strconv"
 	"strings"
 	"sync"
 
@@ -30,6 +31,9 @@ type Organizer struct {
 	Lists  genre.Lists
 	LastFM *genre.LastFM // nil: genres from MusicBrainz only
 	Tagger tagger.Writer
+	// Filler, if set, fetches tracks Tidal lists for an album but does not
+	// serve; without it such albums are held for review.
+	Filler Filler
 
 	LibraryDir string // e.g. /Volumes/music/FLAC
 	// Layout arranges the library. KeepArtistTogether, and retag's moves,
@@ -88,8 +92,17 @@ func (o *Organizer) Organize(ctx context.Context, a Album) (string, error) {
 		return tracks[i].TrackNumber < tracks[j].TrackNumber
 	})
 
+	// Tidal may list more tracks than it serves (some are not licensed here):
+	// leave a blank where each is missing, so the rest line up with
+	// MusicBrainz's track list and the blanks can be filled once it is known.
+	if slots := withGaps(tracks, a.Tidal.NumberOfTracks); slots != nil {
+		tracks = slots
+	}
 	files := make([]string, len(tracks))
 	for i, tr := range tracks {
+		if tr.ID == 0 {
+			continue
+		}
 		f, err := trackFile(a.Dir, tidal.TrackFilename(tr))
 		if err != nil {
 			return o.review(a, err.Error())
@@ -103,6 +116,9 @@ func (o *Organizer) Organize(ctx context.Context, a Album) (string, error) {
 	}
 	match, err := o.MB.Identify(ctx, want, o.Prefs)
 	if errors.Is(err, musicbrainz.ErrNoMatch) {
+		if n := blanks(tracks); n > 0 {
+			return o.review(a, fmt.Sprintf("no MusicBrainz release matches; Tidal serves %d of %d tracks", len(tracks)-n, len(tracks)))
+		}
 		return o.review(a, "no MusicBrainz release matches")
 	}
 	if errors.Is(err, musicbrainz.ErrUnavailable) {
@@ -111,6 +127,9 @@ func (o *Organizer) Organize(ctx context.Context, a Album) (string, error) {
 	}
 	if err != nil {
 		return o.review(a, "MusicBrainz lookup failed: "+err.Error())
+	}
+	if missing := o.fillGaps(ctx, a, match.Release, tracks, files); len(missing) > 0 {
+		return o.review(a, "Tidal is missing "+strings.Join(missing, ", "))
 	}
 	r := match.Release
 	o.logf("identified %s — %s as MusicBrainz release %s (%s, by %s)",
@@ -129,6 +148,125 @@ func (o *Organizer) Organize(ctx context.Context, a Album) (string, error) {
 		return o.review(a, hold.reason)
 	}
 	return dest, err
+}
+
+// withGaps places tracks by disc and track number among total slots, leaving
+// a zero Track where Tidal serves none. Each disc runs to its highest track
+// number, and the last disc to total. It returns nil when nothing is missing
+// or the tracks cannot be placed that way.
+func withGaps(tracks []tidal.Track, total int) []tidal.Track {
+	if total <= len(tracks) || len(tracks) == 0 {
+		return nil
+	}
+	discs := map[int]int{} // disc -> highest track number
+	var order []int
+	for _, tr := range tracks {
+		v := max(tr.VolumeNumber, 1)
+		if _, ok := discs[v]; !ok {
+			order = append(order, v)
+		}
+		discs[v] = max(discs[v], tr.TrackNumber)
+	}
+	last := order[len(order)-1]
+	used := 0
+	for _, v := range order[:len(order)-1] {
+		used += discs[v]
+	}
+	if total-used < discs[last] {
+		return nil
+	}
+	discs[last] = total - used
+
+	start := map[int]int{} // disc -> index of its first slot
+	n := 0
+	for _, v := range order {
+		start[v] = n
+		n += discs[v]
+	}
+	out := make([]tidal.Track, total)
+	for _, tr := range tracks {
+		i := start[max(tr.VolumeNumber, 1)] + tr.TrackNumber - 1
+		if tr.TrackNumber < 1 || out[i].ID != 0 {
+			return nil
+		}
+		out[i] = tr
+	}
+	return out
+}
+
+// blanks counts the slots withGaps left empty.
+func blanks(tracks []tidal.Track) int {
+	n := 0
+	for _, tr := range tracks {
+		if tr.ID == 0 {
+			n++
+		}
+	}
+	return n
+}
+
+// Filler fetches a track an album lacks on Tidal from elsewhere on Tidal,
+// into the album's folder (*downloader.GapFiller).
+type Filler interface {
+	// Fill returns the track as filed: its number and title in the album, and
+	// the stand-in's ISRC and gain. tidal.ErrNoMatch means nothing qualifies.
+	Fill(ctx context.Context, dir string, album tidal.Album, volume, number int, want tidal.WantTrack) (tidal.Track, error)
+}
+
+// fillGaps fetches each blank slot in tracks, as r lists it, through o.Filler,
+// filling in tracks and files. It returns the tracks still missing, as
+// "6 Foundling".
+func (o *Organizer) fillGaps(ctx context.Context, a Album, r musicbrainz.Release, tracks []tidal.Track, files []string) []string {
+	var missing []string
+	i := 0
+	for _, m := range r.Media {
+		for _, t := range m.Tracks {
+			if i >= len(tracks) || tracks[i].ID != 0 {
+				i++
+				continue
+			}
+			label := strconv.Itoa(t.Position) + " " + t.Title
+			if len(r.Media) > 1 {
+				label = strconv.Itoa(m.Position) + "-" + label
+			}
+			want := tidal.WantTrack{
+				Artist:  firstNonEmpty(musicbrainz.CreditName(t.ArtistCredit), musicbrainz.CreditName(r.ArtistCredit)),
+				Title:   t.Title,
+				Seconds: (firstNonZero(t.Length, t.Recording.Length) + 500) / 1000,
+				ISRCs:   t.Recording.ISRCs,
+			}
+			if o.Filler == nil {
+				missing = append(missing, label)
+				i++
+				continue
+			}
+			tr, err := o.Filler.Fill(ctx, a.Dir, a.Tidal, m.Position, t.Position, want)
+			if err == nil {
+				files[i], err = trackFile(a.Dir, tidal.TrackFilename(tr))
+			}
+			if err != nil {
+				if !errors.Is(err, tidal.ErrNoMatch) {
+					o.logf("filling %s — %s track %s: %v", a.Tidal.ArtistName(), a.Tidal.Title, label, err)
+				}
+				missing = append(missing, label)
+				i++
+				continue
+			}
+			o.logf("filled %s — %s track %s from Tidal track %d", a.Tidal.ArtistName(), a.Tidal.Title, label, tr.ID)
+			tracks[i] = tr
+			i++
+		}
+	}
+	return missing
+}
+
+func firstNonZero(xs ...int) int {
+	for _, x := range xs {
+		if x != 0 {
+			return x
+		}
+	}
+	return 0
 }
 
 // holdError is a filing failure that sends a new album to review.

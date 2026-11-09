@@ -3,6 +3,7 @@ package musicbrainz
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"os"
 	"path/filepath"
@@ -122,11 +123,69 @@ func TestFits(t *testing.T) {
 		t.Error("a track 15s out should not fit")
 	}
 	// Same track count, different album: close per track, far on average.
-	if Fits(album(48, 161, 179, 209, 20, 231, 245, 210, 204, 207, 24, 216, 9, 217, 257), creeper) {
-		t.Error("every track 2s out should not fit")
+	if Fits(album(48, 157, 179, 205, 20, 227, 245, 206, 204, 203, 24, 212, 9, 213, 257), creeper) {
+		t.Error("tracks alternately 2s long and short should not fit")
+	}
+	// Another master with longer gaps: every track a little long.
+	if !Fits(album(48, 161, 179, 209, 20, 231, 245, 210, 204, 207, 24, 214, 9, 217, 257), creeper) {
+		t.Error("every track about 2s long should fit")
 	}
 	if Fits(album(200, 185), want(200, 180)) {
 		t.Error("a short release allows no outlier")
+	}
+}
+
+func TestFitsRealMismatches(t *testing.T) {
+	// MusicBrainz minus Tidal, in tenths of a second, from albums held for
+	// review. isrcs says whether each MusicBrainz track
+	// carries the Tidal track's ISRC.
+	cases := []struct {
+		name  string
+		diffs []int
+		isrcs bool
+		fits  bool
+	}{
+		// Every track 1-3s long on Tidal: a master with longer gaps.
+		{"Royal Bangs — Let It Beep", []int{-30, -30, -30, -20, -30, -30, -20, -30, -20, -30, -20, -10}, false, true},
+		// The boundary between tracks 10 and 11 moved.
+		{"Scuba — Triangulation", []int{0, 0, -10, -10, 0, -10, 0, -20, 10, 70, -80, -10}, false, true},
+		{"The Burns Unit — Side Show", []int{-1, 1, 0, -4, 0, -5, -2, -5, 250, -223, 10}, false, true},
+		// The same recordings, measured differently.
+		{"A Winged Victory For The Sullen — Atomos", []int{0, 0, 1, 0, -4, 2, 1, 0, 1, -1, -311}, true, true},
+		{"Bassekou Kouyate — I Speak Fula", []int{-4, 0, 0, 1, 3, 4, 3, 2, -4, -2, 1664}, true, true},
+		// Without ISRCs, one track 31s out is a different version.
+		{"Atomos without ISRCs", []int{0, 0, 1, 0, -4, 2, 1, 0, 1, -1, -311}, false, false},
+	}
+	for _, c := range cases {
+		var r Release
+		var w Want
+		var tracks []Track
+		for i, d := range c.diffs {
+			secs := 200 + i
+			isrc := fmt.Sprintf("X%02d", i)
+			tr := Track{Length: secs*1000 + d*100}
+			if c.isrcs {
+				tr.Recording.ISRCs = []string{isrc}
+			}
+			tracks = append(tracks, tr)
+			w.Tracks = append(w.Tracks, WantTrack{Seconds: secs, ISRC: isrc})
+		}
+		r.Media = []Medium{{Tracks: tracks}}
+		if got := Fits(r, w); got != c.fits {
+			t.Errorf("%s: Fits = %v, want %v", c.name, got, c.fits)
+		}
+	}
+
+	// One disagreeing ISRC is a different recording, however close the lengths.
+	r := Release{Media: []Medium{{Tracks: []Track{
+		{Length: 200_000, Recording: Recording{ISRCs: []string{"A"}}},
+		{Length: 200_000, Recording: Recording{ISRCs: []string{"B"}}},
+		{Length: 200_000, Recording: Recording{ISRCs: []string{"Z"}}},
+		{Length: 260_000, Recording: Recording{ISRCs: []string{"D"}}},
+	}}}}
+	w := Want{Tracks: []WantTrack{{200, "A"}, {200, "B"}, {200, "C"}, {200, "D"}}}
+	if Fits(r, w) {
+		t.Error("a mismatched ISRC must not excuse a 60s difference")
 	}
 }
 
@@ -142,5 +201,33 @@ func TestBestPrefersISRCsThenCountryAndFormat(t *testing.T) {
 	noISRC := mk("gb2", "GB", "Digital Media", "Official", "2010-01-01", "")
 	if got := Best([]Release{us, jp, noISRC, gb}, want, DefaultPrefs); got.ID != "gb" {
 		t.Errorf("Best = %s, want gb", got.ID)
+	}
+}
+
+func TestRomanNumerals(t *testing.T) {
+	for in, want := range map[string]string{
+		"Angels Of Darkness, Demons Of Light 1": "Angels Of Darkness, Demons Of Light I",
+		"Run The Jewels 2":                      "Run The Jewels II",
+		"1999":                                  "1999",
+		"Getting Killed":                        "Getting Killed",
+	} {
+		if got := romanNumerals(in); got != want {
+			t.Errorf("romanNumerals(%q) = %q, want %q", in, got, want)
+		}
+	}
+}
+
+func TestCoreTitle(t *testing.T) {
+	for in, want := range map[string]string{
+		"Devotion - The Gold Edition":           "Devotion",
+		"{Awayland} (Digital Deluxe)":           "{Awayland}",
+		"Hadestown: Deluxe":                     "Hadestown",
+		"Angels Of Darkness, Demons Of Light 1": "Angels Of Darkness, Demons Of Light 1",
+		"Sex, Death & The Infinite Void":        "Sex, Death & The Infinite Void",
+		"Hand. Cannot. Erase. - Steven Wilson":  "Hand. Cannot. Erase. - Steven Wilson",
+	} {
+		if got := coreTitle(in); got != want {
+			t.Errorf("coreTitle(%q) = %q, want %q", in, got, want)
+		}
 	}
 }

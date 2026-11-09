@@ -1,8 +1,10 @@
 package queue
 
 import (
+	"errors"
 	"path/filepath"
 	"testing"
+	"time"
 
 	"github.com/simonb/tidlr/internal/adm"
 )
@@ -117,6 +119,25 @@ func TestRequeueFailed(t *testing.T) {
 	if counts[StateFailed] != 0 || counts[StatePending] != 2 {
 		t.Fatalf("after requeue: pending=%d failed=%d, want 2/0",
 			counts[StatePending], counts[StateFailed])
+	}
+}
+
+func TestRequeueSkipped(t *testing.T) {
+	q := newTestQueue(t)
+	q.Enqueue(sample, false)
+
+	failed, _ := q.ClaimPending(StateDownloading)
+	q.Fail(failed.ReviewID, errTest)
+	skipped, _ := q.ClaimPending(StateDownloading)
+	q.Skip(skipped.ReviewID, errTest)
+
+	n, err := q.RequeueSkipped()
+	if err != nil || n != 1 {
+		t.Fatalf("RequeueSkipped = %d, %v; want 1", n, err)
+	}
+	counts, _ := q.Counts()
+	if counts[StateSkipped] != 0 || counts[StatePending] != 1 || counts[StateFailed] != 1 {
+		t.Errorf("after requeue: %v, want 1 pending, 1 failed", counts)
 	}
 }
 
@@ -322,5 +343,44 @@ func TestCache(t *testing.T) {
 	}
 	if _, ok := q.Cache("other").Get("k"); ok {
 		t.Error("namespaces are not separate")
+	}
+}
+
+func TestActivitySince(t *testing.T) {
+	q := newTestQueue(t)
+	rel := []adm.Release{
+		{ReviewID: 1, Artist: "A", Album: "Filed", ReviewURL: "u"},
+		{ReviewID: 2, Artist: "B", Album: "Held", ReviewURL: "u"},
+		{ReviewID: 3, Artist: "C", Album: "Missing", ReviewURL: "u"},
+		{ReviewID: 4, Artist: "D", Album: "Waiting", ReviewURL: "u"},
+	}
+	if _, err := q.Enqueue(rel, false); err != nil {
+		t.Fatal(err)
+	}
+	if err := q.MarkDownloaded(1, "A", "Filed", "/lib/Rock/A - 2020 - Filed"); err != nil {
+		t.Fatal(err)
+	}
+	q.SetState(1, StateDone)
+	q.Review(2, errors.New("held for review (no MusicBrainz release matches) at /review/B/Held"))
+	q.Skip(3, errors.New("no confident Tidal match"))
+	if err := q.MarkTidalDownloaded(99, "E", "Direct", "/lib/Pop/E - 2021 - Direct"); err != nil {
+		t.Fatal(err)
+	}
+
+	got, err := q.ActivitySince(time.Now().Add(-time.Hour))
+	if err != nil {
+		t.Fatal(err)
+	}
+	want := map[string]State{"Filed": StateDone, "Held": StateReview, "Missing": StateSkipped, "Direct": StateDone}
+	if len(got) != len(want) {
+		t.Fatalf("got %d activities, want %d: %+v", len(got), len(want), got)
+	}
+	for _, a := range got {
+		if want[a.Album] != a.State {
+			t.Errorf("%s: state %s, want %s", a.Album, a.State, want[a.Album])
+		}
+	}
+	if later, _ := q.ActivitySince(time.Now().Add(time.Hour)); len(later) != 0 {
+		t.Errorf("activity after now: %+v", later)
 	}
 }

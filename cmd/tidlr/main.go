@@ -6,7 +6,7 @@
 //	tidlr scrape          Fetch ADM "Just in" and enqueue new albums.
 //	tidlr run             Download + convert all pending queue items.
 //	tidlr sync            requeue failed items, scrape, then run (the everyday command).
-//	tidlr retry           Requeue failed items, then run (no scrape).
+//	tidlr retry           Requeue failed items (and skipped ones with -skipped), then run (no scrape).
 //	tidlr status          Show queue state counts.
 //
 // Flags: -config <path>  (defaults to ./config.toml if present).
@@ -164,8 +164,10 @@ func main() {
 	cfgPath := flag.String("config", "config.toml", "path to TOML config file")
 	force := flag.Bool("force", false, "re-download albums already in the library, overwriting files")
 	since := flag.String("since", "", "scrape all albums added on/after this date (DDMMYY or DD/MM/YYYY)")
+	skipped := flag.Bool("skipped", false, "retry: also requeue albums not found on Tidal")
 	apply := flag.Bool("apply", false, "retag: make the changes (default is a dry run)")
 	limit := flag.Int("limit", 0, "retag: stop after this many albums (0 = all)")
+	days := flag.Int("days", 7, "report: how many days back to cover")
 	playlist := flag.String("playlist", "", "download a Tidal playlist by URL or UUID into <output>/playlist/<name>")
 	var album, track stringList
 	flag.Var(&album, "album", "download a Tidal album by URL or ID into <output>/<artist>/<album> (repeatable)")
@@ -210,9 +212,13 @@ func main() {
 		usage()
 		os.Exit(2)
 	}
+	// Flags may also follow the command (`tidlr retry -skipped`): the flag
+	// package stops at the first non-flag argument, so parse what follows it.
+	cmd := flag.Arg(0)
+	flag.CommandLine.Parse(flag.Args()[1:])
 
 	// `version` needs neither config nor queue; answer before either can fail.
-	if flag.Arg(0) == "version" {
+	if cmd == "version" {
 		fmt.Print(versionString())
 		return
 	}
@@ -239,7 +245,7 @@ func main() {
 		log.Fatalf("invalid --since %q: %v", *since, err)
 	}
 
-	switch flag.Arg(0) {
+	switch cmd {
 	case "login":
 		mustLogin(ctx, cfg)
 	case "scrape":
@@ -262,11 +268,20 @@ func main() {
 			log.Fatalf("retry: %v", err)
 		}
 		log.Printf("requeued %d failed item(s)", n)
+		if *skipped {
+			n, err := q.RequeueSkipped()
+			if err != nil {
+				log.Fatalf("retry: %v", err)
+			}
+			log.Printf("requeued %d skipped item(s)", n)
+		}
 		mustRun(ctx, cfg, q, *force)
 	case "retag":
-		mustRetag(ctx, cfg, q, flag.Args()[1:], *apply, *limit)
+		mustRetag(ctx, cfg, q, flag.Args(), *apply, *limit)
 	case "file":
-		mustFile(ctx, cfg, q, flag.Args()[1:])
+		mustFile(ctx, cfg, q, flag.Args())
+	case "report":
+		mustReport(q, cfg.LibraryDir, *days)
 	case "status":
 		mustStatus(q)
 	default:
@@ -394,6 +409,10 @@ func mustRun(ctx context.Context, cfg config.Config, q *queue.Queue, force bool)
 		Log:                runLog,
 	}
 	if org := mustOrganizer(cfg, runLog, q); org != nil {
+		org.Filler = &downloader.GapFiller{
+			Matcher: dl.Matcher, Downloader: dl.Downloader, Converter: conv,
+			Quality: cfg.Quality, BaseDir: cfg.DownloadDir(),
+		}
 		p.Organizer = org
 	}
 	if err := p.Run(ctx); err != nil && ctx.Err() == nil {
@@ -1168,7 +1187,8 @@ Commands:
   scrape    Enqueue new albums from ADM (uses --since if given, else "Just in")
   run       Download + convert all pending queue items
   sync      requeue failed items, scrape, then run  (the everyday command)
-  retry     Requeue failed items, then run (no scrape)
+  retry     Requeue failed items, then run (no scrape); -skipped also
+            requeues albums not found on Tidal last time
   retag [DIR...]  Refresh the genre of albums in library_dir, worked out
             from their tags (Last.fm, then MusicBrainz); in the genre layout
             also move each to its genre folder. DIR defaults to every
@@ -1177,6 +1197,8 @@ Commands:
   file DIR RELEASE  File an album held for review as the MusicBrainz release
             you choose (its id or musicbrainz.org/release/... URL): tags it
             and moves it into library_dir like any new album
+  report    What happened in the last -days days (default 7): albums filed,
+            held for review, not found on Tidal, and failed
   status    Show queue state counts, and albums held for review
   version   Print the tidlr version
 
