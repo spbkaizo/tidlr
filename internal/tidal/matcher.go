@@ -209,16 +209,19 @@ func (m *Matcher) Match(ctx context.Context, wantArtist, wantTitle string) (Matc
 const shortTitleWords = 4
 
 // searchQueries returns the queries to try in turn: "artist title", then, for a
-// long title, "artist" plus its first few words. Tidal's search returns nothing
-// at all for a very long query (Fiona Apple's 23-word "The Idler Wheel…"),
-// while a few words find it; candidates are still scored against the full
-// title, so the shorter query cannot loosen the match.
+// long title, "artist" plus its first few words, then the title alone. Tidal's
+// search returns nothing at all for a very long query (Fiona Apple's 23-word
+// "The Idler Wheel…"), while a few words find it; and an artist credit longer
+// than Tidal's ("Beth Gibbons and the Polish National Radio Symphony
+// Orchestra" for "Beth Gibbons") buries the album, while its title finds it.
+// Candidates are still scored against the full title and must pass
+// sameArtist, so the shorter queries cannot loosen the match.
 func searchQueries(artist, title string) []string {
 	queries := []string{artist + " " + title}
 	if words := strings.Fields(title); len(words) > shortTitleWords {
 		queries = append(queries, artist+" "+strings.Join(words[:shortTitleWords], " "))
 	}
-	return queries
+	return append(queries, title)
 }
 
 // bestEdition enumerates the matched album's artist catalogue and returns the

@@ -1,6 +1,7 @@
 package tidal
 
 import (
+	"slices"
 	"testing"
 	"time"
 )
@@ -115,13 +116,14 @@ func TestSearchQueries(t *testing.T) {
 	want := []string{
 		"Fiona Apple The Idler Wheel Is Wiser Than The Driver Of The Screw",
 		"Fiona Apple The Idler Wheel Is",
+		"The Idler Wheel Is Wiser Than The Driver Of The Screw",
 	}
-	if len(got) != len(want) || got[0] != want[0] || got[1] != want[1] {
+	if !slices.Equal(got, want) {
 		t.Errorf("long title: got %q, want %q", got, want)
 	}
-	// A short title needs no fallback.
-	if got := searchQueries("Geese", "Getting Killed"); len(got) != 1 || got[0] != "Geese Getting Killed" {
-		t.Errorf("short title: got %q", got)
+	// A short title needs no shortened query.
+	if got, want := searchQueries("Geese", "Getting Killed"), []string{"Geese Getting Killed", "Getting Killed"}; !slices.Equal(got, want) {
+		t.Errorf("short title: got %q, want %q", got, want)
 	}
 }
 
