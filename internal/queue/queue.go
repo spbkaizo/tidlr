@@ -457,3 +457,51 @@ func scanItem(s scanner) (*Item, error) {
 	}
 	return &it, nil
 }
+
+// Activity is what happened to one album: filed, held for review, not
+// found on Tidal, or failed.
+type Activity struct {
+	Artist, Album string
+	State         State  // StateDone, StateReview, StateSkipped or StateFailed
+	Detail        string // the reason, for anything but StateDone
+	Dir           string // where it is now, when known
+	When          time.Time
+}
+
+// ActivitySince lists albums that reached an outcome at or after since,
+// oldest first: queue items (AnyDecentMusic and chart albums) and albums
+// downloaded directly with --album.
+func (q *Queue) ActivitySince(since time.Time) ([]Activity, error) {
+	// Timestamps are stored as UTC text, which sorts as time does.
+	from := since.UTC().Format("2006-01-02 15:04:05")
+	rows, err := q.db.Query(`
+		SELECT i.artist, i.album, i.state, i.last_error, COALESCE(d.output_dir, ''), i.updated_at
+		FROM items i LEFT JOIN downloads d USING (review_id)
+		WHERE i.updated_at >= ? AND i.state IN (?, ?, ?, ?)
+		UNION ALL
+		SELECT artist, album, ?, '', output_dir, downloaded_at
+		FROM tidal_downloads WHERE downloaded_at >= ?
+		ORDER BY 6`,
+		from, StateDone, StateReview, StateSkipped, StateFailed, StateDone, from)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var out []Activity
+	seen := map[string]bool{}
+	for rows.Next() {
+		var a Activity
+		if err := rows.Scan(&a.Artist, &a.Album, &a.State, &a.Detail, &a.Dir, &a.When); err != nil {
+			return nil, err
+		}
+		// A chart album may be recorded both ways; list it once.
+		if a.Dir != "" && a.State == StateDone {
+			if seen[a.Dir] {
+				continue
+			}
+			seen[a.Dir] = true
+		}
+		out = append(out, a)
+	}
+	return out, rows.Err()
+}
