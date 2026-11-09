@@ -6,7 +6,7 @@
 //	tidlr scrape          Fetch ADM "Just in" and enqueue new albums.
 //	tidlr run             Download + convert all pending queue items.
 //	tidlr sync            requeue failed items, scrape, then run (the everyday command).
-//	tidlr retry           Requeue failed items, then run (no scrape).
+//	tidlr retry           Requeue failed items (and skipped ones with -skipped), then run (no scrape).
 //	tidlr status          Show queue state counts.
 //
 // Flags: -config <path>  (defaults to ./config.toml if present).
@@ -164,6 +164,7 @@ func main() {
 	cfgPath := flag.String("config", "config.toml", "path to TOML config file")
 	force := flag.Bool("force", false, "re-download albums already in the library, overwriting files")
 	since := flag.String("since", "", "scrape all albums added on/after this date (DDMMYY or DD/MM/YYYY)")
+	skipped := flag.Bool("skipped", false, "retry: also requeue albums not found on Tidal")
 	apply := flag.Bool("apply", false, "retag: make the changes (default is a dry run)")
 	limit := flag.Int("limit", 0, "retag: stop after this many albums (0 = all)")
 	playlist := flag.String("playlist", "", "download a Tidal playlist by URL or UUID into <output>/playlist/<name>")
@@ -262,6 +263,13 @@ func main() {
 			log.Fatalf("retry: %v", err)
 		}
 		log.Printf("requeued %d failed item(s)", n)
+		if *skipped {
+			n, err := q.RequeueSkipped()
+			if err != nil {
+				log.Fatalf("retry: %v", err)
+			}
+			log.Printf("requeued %d skipped item(s)", n)
+		}
 		mustRun(ctx, cfg, q, *force)
 	case "retag":
 		mustRetag(ctx, cfg, q, flag.Args()[1:], *apply, *limit)
@@ -1172,7 +1180,8 @@ Commands:
   scrape    Enqueue new albums from ADM (uses --since if given, else "Just in")
   run       Download + convert all pending queue items
   sync      requeue failed items, scrape, then run  (the everyday command)
-  retry     Requeue failed items, then run (no scrape)
+  retry     Requeue failed items, then run (no scrape); -skipped also
+            requeues albums not found on Tidal last time
   retag [DIR...]  Refresh the genre of albums in library_dir, worked out
             from their tags (Last.fm, then MusicBrainz); in the genre layout
             also move each to its genre folder. DIR defaults to every

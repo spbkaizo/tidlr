@@ -120,6 +120,25 @@ func TestRequeueFailed(t *testing.T) {
 	}
 }
 
+func TestRequeueSkipped(t *testing.T) {
+	q := newTestQueue(t)
+	q.Enqueue(sample, false)
+
+	failed, _ := q.ClaimPending(StateDownloading)
+	q.Fail(failed.ReviewID, errTest)
+	skipped, _ := q.ClaimPending(StateDownloading)
+	q.Skip(skipped.ReviewID, errTest)
+
+	n, err := q.RequeueSkipped()
+	if err != nil || n != 1 {
+		t.Fatalf("RequeueSkipped = %d, %v; want 1", n, err)
+	}
+	counts, _ := q.Counts()
+	if counts[StateSkipped] != 0 || counts[StatePending] != 1 || counts[StateFailed] != 1 {
+		t.Errorf("after requeue: %v, want 1 pending, 1 failed", counts)
+	}
+}
+
 func TestSkipRecordsError(t *testing.T) {
 	q := newTestQueue(t)
 	q.Enqueue(sample[:1], false)
