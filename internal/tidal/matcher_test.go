@@ -157,3 +157,29 @@ func TestAcceptable(t *testing.T) {
 		}
 	}
 }
+
+func TestSameTrack(t *testing.T) {
+	want := WantTrack{Artist: "Jessie Ware", Title: "Valentine", Seconds: 130}
+	tr := func(title, artist string, secs int) Track {
+		return Track{Title: title, Artist: Artist{Name: artist}, Duration: secs}
+	}
+	cases := []struct {
+		tr Track
+		ok bool
+	}{
+		{tr("Valentine", "Jessie Ware", 128), true},
+		{tr("Valentine", "Jessie Ware", 140), false},        // another version
+		{tr("Mr Valentine", "Jessie Ware", 130), false},     // another song
+		{tr("Valentine", "Pale Honey", 130), false},         // another artist
+		{tr("Valentine (Live)", "Jessie Ware", 131), false}, // side version
+		{tr("Valentine - 2013 Remaster", "Jessie Ware", 130), false},
+	}
+	for _, c := range cases {
+		if got := sameTrack(c.tr, want); got != c.ok {
+			t.Errorf("sameTrack(%q by %s, %ds) = %v, want %v", c.tr.Title, c.tr.Artist.Name, c.tr.Duration, got, c.ok)
+		}
+	}
+	if sameTrack(tr("Valentine", "Jessie Ware", 130), WantTrack{Artist: "Jessie Ware", Title: "Valentine"}) {
+		t.Error("unknown length must not match without an ISRC")
+	}
+}

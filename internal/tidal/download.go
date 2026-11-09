@@ -360,6 +360,24 @@ func (d *Downloader) DownloadTracks(ctx context.Context, trackIDs []int64, quali
 	return DownloadResult{Dir: destDir, Lossless: allLossless, Tracks: delivered}, nil
 }
 
+// DownloadAs downloads tr into destDir as track number of album's disc
+// volume, under the name and tags an album download gives that position. It
+// fills a track the album itself does not serve. Returns the file's path.
+func (d *Downloader) DownloadAs(ctx context.Context, tr Track, album Album, volume, number int, quality, destDir string) (string, error) {
+	slot := Track{Title: tr.Title, TrackNumber: number, VolumeNumber: volume}
+	meta := albumTrackMeta(slot, album)
+	if _, err := d.downloadTrack(ctx, tr, meta, APIQuality(quality), destDir, nil); err != nil {
+		return "", err
+	}
+	for _, ext := range []string{".flac", ".m4a", ".mp4"} {
+		p := filepath.Join(destDir, meta.FileBase+ext)
+		if _, err := os.Stat(p); err == nil {
+			return p, nil
+		}
+	}
+	return "", fmt.Errorf("track %d: no file written", tr.ID)
+}
+
 // trackMetaFor builds tag metadata for a standalone track from its own album,
 // fetching the cover into coverDir (best effort) for per-track embedding.
 func (d *Downloader) trackMetaFor(ctx context.Context, tr Track, coverDir string) trackMeta {

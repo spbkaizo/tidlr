@@ -85,6 +85,9 @@ type SearchResult struct {
 	Albums struct {
 		Items []Album `json:"items"`
 	} `json:"albums"`
+	Tracks struct {
+		Items []Track `json:"items"`
+	} `json:"tracks"`
 }
 
 // ArtistAlbums is the paginated result of GET /artists/{id}/albums.

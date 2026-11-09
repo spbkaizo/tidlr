@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"regexp"
+	"slices"
 	"strings"
 	"time"
 )
@@ -95,13 +96,13 @@ func isLossless(a Album) bool {
 // Johnsons"). Without it an exact title by someone else outscores minScore on
 // title alone (Pale Honey's "Devotion" for Jessie Ware's).
 func sameArtist(a Album, wantArtist string) bool {
+	return anyArtist(append([]Artist{a.Artist}, a.Artists...), wantArtist)
+}
+
+func anyArtist(artists []Artist, wantArtist string) bool {
 	want := normalize(wantArtist)
-	names := []string{a.Artist.Name}
-	for _, ar := range a.Artists {
-		names = append(names, ar.Name)
-	}
-	for _, n := range names {
-		got := normalize(n)
+	for _, ar := range artists {
+		got := normalize(ar.Name)
 		if got == "" {
 			continue
 		}
@@ -263,4 +264,55 @@ func (m *Matcher) bestEdition(ctx context.Context, matched Album, wantTitle stri
 		}
 	}
 	return best
+}
+
+// WantTrack is a track an album lacks on Tidal, as MusicBrainz lists it.
+type WantTrack struct {
+	Artist, Title string
+	Seconds       int // 0 if unknown
+	ISRCs         []string
+}
+
+// maxTrackDrift is how far a stand-in track's length may be from the wanted
+// one when no ISRC vouches for it.
+const maxTrackDrift = 3
+
+// FindTrack looks for want elsewhere on Tidal: a single, a compilation, or
+// the original of a track an album borrows. A hit with one of want's ISRCs is
+// the same recording; otherwise it needs the same artist, the same title and
+// a length within maxTrackDrift. Returns ErrNoMatch if nothing qualifies.
+func (m *Matcher) FindTrack(ctx context.Context, want WantTrack) (Track, error) {
+	var fallback *Track
+	for _, query := range []string{want.Artist + " " + want.Title, want.Title} {
+		res, err := m.Client.Search(ctx, query)
+		if err != nil {
+			return Track{}, err
+		}
+		for i, tr := range res.Tracks.Items {
+			if slices.Contains(want.ISRCs, tr.ISRC) {
+				return tr, nil
+			}
+			if fallback == nil && sameTrack(tr, want) {
+				fallback = &res.Tracks.Items[i]
+			}
+		}
+	}
+	if fallback != nil {
+		return *fallback, nil
+	}
+	return Track{}, ErrNoMatch
+}
+
+// sameTrack reports whether tr has want's artist, title and length, and is
+// not a side version (live, remix, edit) of it.
+func sameTrack(tr Track, want WantTrack) bool {
+	if want.Seconds == 0 || tr.Duration-want.Seconds > maxTrackDrift || want.Seconds-tr.Duration > maxTrackDrift {
+		return false
+	}
+	if m := sideReleaseRe.FindStringSubmatch(tr.Title); m != nil &&
+		!strings.Contains(strings.ToLower(want.Title), strings.ToLower(m[1])) {
+		return false
+	}
+	return similarityRatio(normalize(tr.Title), normalize(want.Title)) >= 0.9 &&
+		anyArtist(append([]Artist{tr.Artist}, tr.Artists...), want.Artist)
 }
