@@ -108,8 +108,46 @@ func (c *Client) Identify(ctx context.Context, want Want, prefs Prefs) (Match, e
 			return Match{Release: Best(fits, want, prefs), Method: s.method}, nil
 		}
 	}
+	more, err := c.groupCandidates(ctx, want)
+	if err != nil {
+		return Match{}, fmt.Errorf("release group lookup: %w", err)
+	}
+	for _, g := range more {
+		if !slices.Contains(groups, g) {
+			groups = append(groups, g)
+		}
+	}
 	return c.groupMatch(ctx, want, prefs, groups, tried)
 }
+
+// groupCandidates finds the album's release groups by artist and core title,
+// whatever the track count: the edition Tidal has may not be among the
+// releases the earlier stages found.
+func (c *Client) groupCandidates(ctx context.Context, want Want) ([]string, error) {
+	hits, err := c.SearchReleases(ctx, fmt.Sprintf("artist:%s AND release:%s", quote(want.Artist), quote(coreTitle(want.Title))), 25)
+	if err != nil {
+		return nil, err
+	}
+	var groups []string
+	for _, h := range hits {
+		if g := h.ReleaseGroup.ID; g != "" && !slices.Contains(groups, g) && sameAlbum(h, want) {
+			groups = append(groups, g)
+		}
+	}
+	return groups, nil
+}
+
+// editionRe matches an edition named after a dash or colon: "Devotion - The
+// Gold Edition", "Hadestown: Deluxe".
+var editionRe = regexp.MustCompile(`(?i)\s*[-:–]\s+[^-:–]*\b(edition|deluxe|expanded|remaster(ed)?|anniversary|version|reissue)\b.*$`)
+
+// coreTitle is title without its edition: "Devotion - The Gold Edition" and
+// "{Awayland} (Digital Deluxe)" are the albums "Devotion" and "{Awayland}".
+func coreTitle(title string) string {
+	return strings.TrimSpace(bracketRe.ReplaceAllString(editionRe.ReplaceAllString(title, ""), " "))
+}
+
+var bracketRe = regexp.MustCompile(`[\(\[][^\)\]]*[\)\]]`)
 
 // maxGroups caps how many release groups the last stage browses.
 const maxGroups = 2
@@ -140,10 +178,15 @@ func (c *Client) groupMatch(ctx context.Context, want Want, prefs Prefs, groups 
 	return Match{Release: r, Method: "release group"}, nil
 }
 
-// sameAlbum reports whether r's artist and title are close to want's.
+// sameAlbum reports whether r's artist and title are close to want's, the
+// title with or without its edition.
 func sameAlbum(r Release, want Want) bool {
-	return tidal.Similarity(tidal.Normalize(CreditName(r.ArtistCredit)), tidal.Normalize(want.Artist)) >= 0.8 &&
-		tidal.Similarity(tidal.Normalize(r.Title), tidal.Normalize(want.Title)) >= 0.8
+	if tidal.Similarity(tidal.Normalize(CreditName(r.ArtistCredit)), tidal.Normalize(want.Artist)) < 0.8 {
+		return false
+	}
+	got := tidal.Normalize(coreTitle(r.Title))
+	return tidal.Similarity(got, tidal.Normalize(want.Title)) >= 0.8 ||
+		tidal.Similarity(got, tidal.Normalize(coreTitle(want.Title))) >= 0.8
 }
 
 // barcodeCandidates searches by UPC. Tidal pads UPCs with leading zeros that
@@ -158,8 +201,12 @@ func (c *Client) barcodeCandidates(ctx context.Context, want Want) ([]string, er
 	if t := strings.TrimLeft(code, "0"); t != code && t != "" {
 		forms = append(forms, t)
 	}
-	if len(code) == 12 { // UPC-A is EAN-13 with a leading zero
-		forms = append(forms, "0"+code)
+	// MusicBrainz usually holds the 13-digit EAN (a UPC-A with a leading
+	// zero); Tidal pads to 12 or 14 digits.
+	if t := strings.TrimLeft(code, "0"); t != "" && len(t) < 13 {
+		if ean := strings.Repeat("0", 13-len(t)) + t; !slices.Contains(forms, ean) {
+			forms = append(forms, ean)
+		}
 	}
 	var terms []string
 	for _, f := range forms {

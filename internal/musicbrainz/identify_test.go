@@ -216,3 +216,18 @@ func TestRomanNumerals(t *testing.T) {
 		}
 	}
 }
+
+func TestCoreTitle(t *testing.T) {
+	for in, want := range map[string]string{
+		"Devotion - The Gold Edition":           "Devotion",
+		"{Awayland} (Digital Deluxe)":           "{Awayland}",
+		"Hadestown: Deluxe":                     "Hadestown",
+		"Angels Of Darkness, Demons Of Light 1": "Angels Of Darkness, Demons Of Light 1",
+		"Sex, Death & The Infinite Void":        "Sex, Death & The Infinite Void",
+		"Hand. Cannot. Erase. - Steven Wilson":  "Hand. Cannot. Erase. - Steven Wilson",
+	} {
+		if got := coreTitle(in); got != want {
+			t.Errorf("coreTitle(%q) = %q, want %q", in, got, want)
+		}
+	}
+}
