@@ -166,6 +166,7 @@ func main() {
 	since := flag.String("since", "", "scrape all albums added on/after this date (DDMMYY or DD/MM/YYYY)")
 	apply := flag.Bool("apply", false, "retag: make the changes (default is a dry run)")
 	limit := flag.Int("limit", 0, "retag: stop after this many albums (0 = all)")
+	days := flag.Int("days", 7, "report: how many days back to cover")
 	playlist := flag.String("playlist", "", "download a Tidal playlist by URL or UUID into <output>/playlist/<name>")
 	var album, track stringList
 	flag.Var(&album, "album", "download a Tidal album by URL or ID into <output>/<artist>/<album> (repeatable)")
@@ -267,6 +268,8 @@ func main() {
 		mustRetag(ctx, cfg, q, flag.Args()[1:], *apply, *limit)
 	case "file":
 		mustFile(ctx, cfg, q, flag.Args()[1:])
+	case "report":
+		mustReport(q, cfg.LibraryDir, *days)
 	case "status":
 		mustStatus(q)
 	default:
@@ -1181,6 +1184,8 @@ Commands:
   file DIR RELEASE  File an album held for review as the MusicBrainz release
             you choose (its id or musicbrainz.org/release/... URL): tags it
             and moves it into library_dir like any new album
+  report    What happened in the last -days days (default 7): albums filed,
+            held for review, not found on Tidal, and failed
   status    Show queue state counts, and albums held for review
   version   Print the tidlr version
 
