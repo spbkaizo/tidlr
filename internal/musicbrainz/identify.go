@@ -4,7 +4,9 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"regexp"
 	"slices"
+	"strconv"
 	"strings"
 
 	"github.com/simonb/tidlr/internal/tidal"
@@ -59,13 +61,16 @@ const (
 	lengthTolerance = 3000  // a track within this agrees
 	maxOutlier      = 10000 // no track may differ by more
 	maxMeanDiff     = 2000  // the average difference across the album
+	maxShift        = 4000  // the largest whole-album offset taken out first
 )
 
 // Identify finds the MusicBrainz release for want: by barcode, then by the
 // releases containing its first ISRCs, then by artist and title search. Each
 // stage's candidates are fetched in full and kept only if their track list
 // fits want (same count, lengths within tolerance); the first stage to yield a
-// fit decides, and prefs choose among its fits.
+// fit decides, and prefs choose among its fits. If none fits, every other
+// release of the albums those stages found is tried: another pressing or
+// edition may carry the tracks Tidal has.
 func (c *Client) Identify(ctx context.Context, want Want, prefs Prefs) (Match, error) {
 	stages := []struct {
 		method string
@@ -76,6 +81,7 @@ func (c *Client) Identify(ctx context.Context, want Want, prefs Prefs) (Match, e
 		{"search", func() ([]string, error) { return c.searchCandidates(ctx, want) }},
 	}
 	tried := map[string]bool{}
+	var groups []string
 	for _, s := range stages {
 		ids, err := s.ids()
 		if err != nil {
@@ -94,12 +100,50 @@ func (c *Client) Identify(ctx context.Context, want Want, prefs Prefs) (Match, e
 			if Fits(r, want) {
 				fits = append(fits, r)
 			}
+			if g := r.ReleaseGroup.ID; g != "" && !slices.Contains(groups, g) && sameAlbum(r, want) {
+				groups = append(groups, g)
+			}
 		}
 		if len(fits) > 0 {
 			return Match{Release: Best(fits, want, prefs), Method: s.method}, nil
 		}
 	}
-	return Match{}, ErrNoMatch
+	return c.groupMatch(ctx, want, prefs, groups, tried)
+}
+
+// maxGroups caps how many release groups the last stage browses.
+const maxGroups = 2
+
+// groupMatch tries every release in groups not already tried, and fetches the
+// best fit in full.
+func (c *Client) groupMatch(ctx context.Context, want Want, prefs Prefs, groups []string, tried map[string]bool) (Match, error) {
+	var fits []Release
+	for _, g := range firstN(groups, maxGroups) {
+		rs, err := c.ReleasesInGroup(ctx, g)
+		if err != nil {
+			return Match{}, fmt.Errorf("release group %s: %w", g, err)
+		}
+		for _, r := range rs {
+			if !tried[r.ID] && Fits(r, want) {
+				fits = append(fits, r)
+			}
+		}
+	}
+	if len(fits) == 0 {
+		return Match{}, ErrNoMatch
+	}
+	id := Best(fits, want, prefs).ID
+	r, err := c.LookupRelease(ctx, id)
+	if err != nil {
+		return Match{}, fmt.Errorf("release %s: %w", id, err)
+	}
+	return Match{Release: r, Method: "release group"}, nil
+}
+
+// sameAlbum reports whether r's artist and title are close to want's.
+func sameAlbum(r Release, want Want) bool {
+	return tidal.Similarity(tidal.Normalize(CreditName(r.ArtistCredit)), tidal.Normalize(want.Artist)) >= 0.8 &&
+		tidal.Similarity(tidal.Normalize(r.Title), tidal.Normalize(want.Title)) >= 0.8
 }
 
 // barcodeCandidates searches by UPC. Tidal pads UPCs with leading zeros that
@@ -169,11 +213,19 @@ func (c *Client) isrcCandidates(ctx context.Context, want Want) ([]string, error
 // searchCandidates searches by artist, title and track count, keeping hits
 // whose names are close to want's. If that finds nothing it searches by
 // title and track count alone: MusicBrainz's spelling of the artist can
-// defeat the phrase query ("D’Angelo" with a curly apostrophe).
+// defeat the phrase query ("D’Angelo" with a curly apostrophe). A title
+// numbered in digits is also tried in Roman numerals ("Angels of Darkness,
+// Demons of Light I").
 func (c *Client) searchCandidates(ctx context.Context, want Want) ([]string, error) {
-	queries := []string{
-		fmt.Sprintf("artist:%s AND release:%s AND tracks:%d", quote(want.Artist), quote(want.Title), len(want.Tracks)),
-		fmt.Sprintf("release:%s AND tracks:%d", quote(want.Title), len(want.Tracks)),
+	titles := []string{want.Title}
+	if r := romanNumerals(want.Title); r != want.Title {
+		titles = append(titles, r)
+	}
+	var queries []string
+	for _, t := range titles {
+		queries = append(queries,
+			fmt.Sprintf("artist:%s AND release:%s AND tracks:%d", quote(want.Artist), quote(t), len(want.Tracks)),
+			fmt.Sprintf("release:%s AND tracks:%d", quote(t), len(want.Tracks)))
 	}
 	wantArtist, wantTitle := tidal.Normalize(want.Artist), tidal.Normalize(want.Title)
 	for _, q := range queries {
@@ -196,16 +248,36 @@ func (c *Client) searchCandidates(ctx context.Context, want Want) ([]string, err
 	return nil, nil
 }
 
+var numberRe = regexp.MustCompile(`\b([1-9]|10)\b`)
+
+// romanNumerals writes the numbers 1 to 10 in title as Roman numerals.
+func romanNumerals(title string) string {
+	roman := []string{"", "I", "II", "III", "IV", "V", "VI", "VII", "VIII", "IX", "X"}
+	return numberRe.ReplaceAllStringFunc(title, func(n string) string {
+		i, _ := strconv.Atoi(n)
+		return roman[i]
+	})
+}
+
 // Fits reports whether r's track list matches want: the same number of
-// tracks, and lengths (where both sides know them) that agree: each within
-// lengthTolerance, bar one track in eight (none for under four tracks)
+// tracks, and either the same recordings (every ISRC both sides know agrees,
+// across most of the album) or lengths that agree. Lengths are compared after
+// removing the album's typical offset (a master with longer gaps runs every
+// track a couple of seconds long), and a pair of neighbours that are out by
+// opposite amounts counts as one moved track boundary. Then each track must be
+// within lengthTolerance, bar one in eight (none for under four tracks)
 // within maxOutlier, with the mean difference under maxMeanDiff.
 func Fits(r Release, want Want) bool {
 	tracks := r.Tracks()
 	if len(tracks) == 0 || len(tracks) != len(want.Tracks) {
 		return false
 	}
-	var compared, total, outliers int
+	if sameRecordings(tracks, want) {
+		return true
+	}
+	diffs := make([]int, len(tracks))
+	known := make([]bool, len(tracks))
+	var signed []int
 	for i, t := range tracks {
 		ms := t.Length
 		if ms == 0 {
@@ -215,9 +287,33 @@ func Fits(r Release, want Want) bool {
 		if ms == 0 || w == 0 {
 			continue
 		}
-		d := ms - w
-		if d < 0 {
-			d = -d
+		diffs[i], known[i] = ms-w, true
+		signed = append(signed, ms-w)
+	}
+	if len(signed) == 0 {
+		return true
+	}
+	if shift := median(signed); len(signed) >= 4 && abs(shift) <= maxShift {
+		for i := range diffs {
+			diffs[i] -= shift
+		}
+	}
+
+	var compared, total, outliers int
+	for i := 0; i < len(diffs); i++ {
+		if !known[i] {
+			continue
+		}
+		d := abs(diffs[i])
+		// A boundary moved between neighbours: one long, the next short by
+		// about as much. Together they agree.
+		if d > lengthTolerance && i+1 < len(diffs) && known[i+1] &&
+			(diffs[i] > 0) != (diffs[i+1] > 0) && abs(diffs[i]+diffs[i+1]) <= lengthTolerance {
+			pair := abs(diffs[i] + diffs[i+1])
+			compared += 2
+			total += pair
+			i++
+			continue
 		}
 		if d > maxOutlier {
 			return false
@@ -228,15 +324,44 @@ func Fits(r Release, want Want) bool {
 		compared++
 		total += d
 	}
-	if compared == 0 {
-		return true
-	}
 	// One outlier per eight tracks; a single or EP of under four, none.
 	allowed := len(tracks) / 8
 	if len(tracks) >= 4 {
 		allowed = max(allowed, 1)
 	}
 	return outliers <= allowed && total/compared < maxMeanDiff
+}
+
+// sameRecordings reports whether ISRCs prove r's tracks are want's: both
+// sides know the ISRC for at least three tracks and three in four, and every
+// one of those agrees. Lengths then only reflect how each catalogue measured
+// them (a hidden track cut, a fade trimmed).
+func sameRecordings(tracks []Track, want Want) bool {
+	compared := 0
+	for i, t := range tracks {
+		w := want.Tracks[i].ISRC
+		if w == "" || len(t.Recording.ISRCs) == 0 {
+			continue
+		}
+		if !slices.Contains(t.Recording.ISRCs, w) {
+			return false
+		}
+		compared++
+	}
+	return compared >= 3 && compared*4 >= len(tracks)*3
+}
+
+func median(xs []int) int {
+	s := slices.Clone(xs)
+	slices.Sort(s)
+	return s[len(s)/2]
+}
+
+func abs(x int) int {
+	if x < 0 {
+		return -x
+	}
+	return x
 }
 
 // Best picks among fitting releases: most matching ISRCs first, then
