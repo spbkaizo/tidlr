@@ -394,6 +394,10 @@ func mustRun(ctx context.Context, cfg config.Config, q *queue.Queue, force bool)
 		Log:                runLog,
 	}
 	if org := mustOrganizer(cfg, runLog, q); org != nil {
+		org.Filler = &downloader.GapFiller{
+			Matcher: dl.Matcher, Downloader: dl.Downloader, Converter: conv,
+			Quality: cfg.Quality, BaseDir: cfg.DownloadDir(),
+		}
 		p.Organizer = org
 	}
 	if err := p.Run(ctx); err != nil && ctx.Err() == nil {
