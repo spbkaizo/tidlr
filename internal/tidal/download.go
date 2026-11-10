@@ -10,6 +10,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"slices"
 	"strconv"
 	"strings"
 	"sync"
@@ -98,6 +99,21 @@ func (d *Downloader) DownloadAlbum(ctx context.Context, albumID int64, quality, 
 	}
 	if len(tracks) == 0 {
 		return DownloadResult{}, fmt.Errorf("album %d has no tracks", albumID)
+	}
+	// Leave out tracks Tidal lists but will not stream, rather than fail the
+	// whole album on them: the organizer sees them as gaps and looks for each
+	// elsewhere on Tidal.
+	tracks = slices.DeleteFunc(tracks, func(tr Track) bool {
+		if tr.Playable() {
+			return false
+		}
+		if d.Log != nil {
+			d.Log.Printf("album %d: skipped %q (%d): Tidal will not stream it", albumID, tr.Title, tr.ID)
+		}
+		return true
+	})
+	if len(tracks) == 0 {
+		return DownloadResult{}, fmt.Errorf("album %d: Tidal will not stream any of its tracks", albumID)
 	}
 	if d.OnAlbumStart != nil {
 		d.OnAlbumStart(len(tracks))
