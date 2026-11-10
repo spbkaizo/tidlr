@@ -1,6 +1,7 @@
 package tidal
 
 import (
+	"encoding/json"
 	"slices"
 	"testing"
 	"time"
@@ -183,5 +184,23 @@ func TestSameTrack(t *testing.T) {
 	}
 	if sameTrack(tr("Valentine", "Jessie Ware", 130), WantTrack{Artist: "Jessie Ware", Title: "Valentine"}) {
 		t.Error("unknown length must not match without an ISRC")
+	}
+}
+
+func TestPlayable(t *testing.T) {
+	for in, want := range map[string]bool{
+		`{"id":1}`:                       true, // field left out
+		`{"id":1,"allowStreaming":true}`: true,
+		// Real: "Pisa no Taboado" on Mr Bongo Record Club, Vol. 3, listed
+		// but refused with HTTP 401 at every quality.
+		`{"id":105837934,"allowStreaming":false}`: false,
+	} {
+		var tr Track
+		if err := json.Unmarshal([]byte(in), &tr); err != nil {
+			t.Fatal(err)
+		}
+		if got := tr.Playable(); got != want {
+			t.Errorf("%s: Playable = %v, want %v", in, got, want)
+		}
 	}
 }

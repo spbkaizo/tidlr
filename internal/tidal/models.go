@@ -123,7 +123,14 @@ type Track struct {
 	Artist       Artist     `json:"artist"`
 	Artists      []Artist   `json:"artists"`
 	Album        TrackAlbum `json:"album"`
+	// AllowStreaming is false for a track Tidal lists but will not stream
+	// here (not licensed); nil when the response leaves it out.
+	AllowStreaming *bool `json:"allowStreaming"`
 }
+
+// Playable reports whether Tidal will stream the track. Asking for the stream
+// of one it will not gets HTTP 401 at every quality.
+func (t Track) Playable() bool { return t.AllowStreaming == nil || *t.AllowStreaming }
 
 // ArtistName returns the track's primary artist name.
 func (t Track) ArtistName() string {

@@ -292,6 +292,9 @@ func (m *Matcher) FindTrack(ctx context.Context, want WantTrack) (Track, error) 
 			return Track{}, err
 		}
 		for i, tr := range res.Tracks.Items {
+			if !tr.Playable() {
+				continue // another copy Tidal will not stream either
+			}
 			if slices.Contains(want.ISRCs, tr.ISRC) {
 				return tr, nil
 			}
