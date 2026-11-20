@@ -7,6 +7,13 @@ All notable changes to `tidlr` are documented here. This project adheres to
 
 ### Added
 
+- **USB mode** (`tidlr -usb DIR [-since DATE] usb`). Fills a mounted stick
+  with 192k MP3 copies of ADM releases (the "Just in" page, or everything
+  added since a date), newest first: each album is downloaded, encoded off the
+  stick, and copied across only if it fits, so a partial album never lands on
+  it. Albums Tidal cannot match are skipped; an `INDEX.txt` on the stick lists
+  what was added and a rerun resumes. FAT sticks on FreeBSD need
+  `mount_msdosfs -L en_US.UTF-8` or names with curly quotes fail.
 - **MusicBrainz tagging and filing** (`library_dir`). Each downloaded album
   is identified on MusicBrainz (barcode, then ISRCs, then name search, checked
   against the downloaded track list), given a genre from Last.fm the way the
