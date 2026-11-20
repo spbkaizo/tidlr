@@ -8,6 +8,7 @@
 //	tidlr sync            requeue failed items, scrape, then run (the everyday command).
 //	tidlr retry           Requeue failed items (and skipped ones with -skipped), then run (no scrape).
 //	tidlr status          Show queue state counts.
+//	tidlr -usb DIR usb    Fill a mounted USB stick with 192k MP3 copies of ADM releases (-since DATE; default "Just in").
 //
 // Flags: -config <path>  (defaults to ./config.toml if present).
 //
@@ -168,6 +169,7 @@ func main() {
 	apply := flag.Bool("apply", false, "retag: make the changes (default is a dry run)")
 	limit := flag.Int("limit", 0, "retag: stop after this many albums (0 = all)")
 	days := flag.Int("days", 7, "report: how many days back to cover")
+	usb := flag.String("usb", "", "usb: mounted stick to fill with 192k MP3 copies of ADM releases (see -since)")
 	playlist := flag.String("playlist", "", "download a Tidal playlist by URL or UUID into <output>/playlist/<name>")
 	var album, track stringList
 	flag.Var(&album, "album", "download a Tidal album by URL or ID into <output>/<artist>/<album> (repeatable)")
@@ -282,6 +284,11 @@ func main() {
 		mustFile(ctx, cfg, q, flag.Args())
 	case "report":
 		mustReport(q, cfg.LibraryDir, *days)
+	case "usb":
+		if *usb == "" {
+			log.Fatalf("usb: give the mounted stick, e.g. tidlr -usb /Volumes/STICK -since 010126 usb")
+		}
+		mustUSB(ctx, cfg, *usb, sinceTime)
 	case "status":
 		mustStatus(q)
 	default:
